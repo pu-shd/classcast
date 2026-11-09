@@ -670,3 +670,21 @@ export async function loadRosterNames(config, fetchImpl = fetch) {
     if (config.gist) return rosterNamesFromCSV(await fetchGistText(config.gist, fetchImpl), config.gist);
     return null;
 }
+
+/**
+ * The roster typed into the create page's name fields: cleaned, blanks
+ * dropped. Returns null when it means "no roster": empty, or exactly the
+ * default seats (which the class page shows anyway), keeping links short.
+ * @param {string[]} values
+ * @returns {string[] | null}
+ */
+export function rosterFromEditor(values) {
+    const names = values.map((v) => cleanText(v, LIMITS.maxNameLength)).filter(Boolean);
+    if (names.length > LIMITS.maxStudents) {
+        throw new Error(`Roster has ${names.length} names; the limit is ${LIMITS.maxStudents}`);
+    }
+    if (names.length === 0) return null;
+    const seats = defaultStudents().map((s) => s.name);
+    if (names.length === seats.length && names.every((n, i) => n === seats[i])) return null;
+    return names;
+}

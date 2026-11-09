@@ -14,8 +14,16 @@ export const rowNames = (page) => page.locator(".student-row .student-name").eva
 export const shareHrefs = (page) => page.locator("a.btn-share").evaluateAll(
     (els) => els.map((a) => a.getAttribute("href")));
 
-/** Names in the create page's preview. @param {import("@playwright/test").Page} page */
-export const previewNames = (page) => page.locator("#preview li").allTextContents();
+/** Names in the create page's roster editor. @param {import("@playwright/test").Page} page */
+export const previewNames = (page) => page.locator("#rosterList input").evaluateAll(
+    (els) => els.map((el) => /** @type {HTMLInputElement} */ (el).value));
+
+/** Open the create page's collapsed import section. @param {import("@playwright/test").Page} page */
+export async function openImport(page) {
+    if (!(await page.locator("#importSection").evaluate((d) => /** @type {HTMLDetailsElement} */ (d).open))) {
+        await page.click("#importSection > summary");
+    }
+}
 
 /** A fresh browser (no shared storage) that fails the test on page errors. @param {import("@playwright/test").Browser} browser */
 export async function freshPage(browser) {

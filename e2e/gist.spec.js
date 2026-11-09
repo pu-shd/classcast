@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { rowNames as names, previewNames, shareHrefs, jdata } from "./helpers.js";
+import { rowNames as names, previewNames, shareHrefs, jdata, openImport } from "./helpers.js";
 
 const ID = "13905633547d9de4e3e21f977cee9e0c";
 const RAW = `https://gist.githubusercontent.com/prof-x/${ID}/raw`;
@@ -33,6 +33,7 @@ test("a gist roster gives a short link that follows later edits to the gist", as
     let roster = "ID,Student Name\n1,Alice Chen\n2,Bob Martinez\n";
     const seen = await fakeGist(page.context(), () => ({ status: 200, body: roster }));
     await page.goto("/create.html");
+    await openImport(page);
     await page.fill("#gistUrl", `https://gist.github.com/prof-x/${ID}`);
     await page.click("#loadGist");
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 2 students from the gist/);
@@ -64,6 +65,22 @@ test("a gist roster gives a short link that follows later edits to the gist", as
     await expect(editor.locator("#csvStatus")).toHaveText(/gist lists 3 students/);
     await expect(editor.locator("#gistUrl")).toHaveValue(`https://gist.github.com/prof-x/${ID}`);
     expect(await editor.locator("#classLink").inputValue()).toBe(classLink);
+    await expect(editor.locator("#importSection")).toHaveAttribute("open", "");
+    // Gist names are read-only here; switching makes them editable link names.
+    await expect(editor.locator("#rosterList input").first()).toHaveAttribute("readonly", "");
+    await expect(editor.locator("#addStudent")).toBeHidden();
+    await editor.click("#detachGist");
+    await expect(editor.locator("#rosterList input").first()).not.toHaveAttribute("readonly", "");
+    await editor.locator("#rosterList input").nth(2).fill("Carol J.");
+    await expect(editor.locator("#linkStatus")).toHaveText(/lives in the link/);
+    const detached = await editor.locator("#classLink").inputValue();
+    expect(detached).not.toBe(classLink);
+    roster = "ID,Student Name\n1,Changed\n";
+    const later = await student.context().newPage();
+    await expect.poll(async () => {
+        await later.goto(await editor.locator("#classLink").inputValue());
+        return names(later);
+    }).toEqual(["Alice Chen", "Bob Martinez", "Carol J."]);
 });
 
 test("a link to a deleted gist shows an error, not a roster", async ({ page }) => {
@@ -78,16 +95,18 @@ test("a link to a deleted gist shows an error, not a roster", async ({ page }) =
 test("a non-gist URL is refused before any request is made", async ({ page }) => {
     const seen = await fakeGist(page.context(), () => ({ status: 200, body: "Name\nA\n" }));
     await page.goto("/create.html");
+    await openImport(page);
     await page.fill("#gistUrl", "https://evil.example/prof-x/abc");
     await page.press("#gistUrl", "Enter");
     await expect(page.locator("#csvStatus")).toHaveText(/isn't a gist link/);
     expect(seen).toEqual([]);
-    expect(await previewNames(page)).toEqual([]);
+    expect((await previewNames(page)).length).toBe(20); // untouched default seats
 });
 
 test("a gist that can't be reached reports the failure", async ({ page }) => {
     await page.context().route(/gist\.githubusercontent\.com/, (route) => route.abort("internetdisconnected"));
     await page.goto("/create.html");
+    await openImport(page);
     await page.fill("#gistUrl", `prof-x/${ID}`);
     await page.click("#loadGist");
     await expect(page.locator("#csvStatus")).toHaveText(/Couldn't reach GitHub/);
