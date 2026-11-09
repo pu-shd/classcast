@@ -1,0 +1,4 @@
+services:
+  test:
+    build: .
+    image: umbracast-test
