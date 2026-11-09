@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { rowNames as names, previewNames, shareHrefs, jdata, openImport, blockWebFonts } from "./helpers.js";
+import { rowNames as names, previewNames, shareHrefs, jdata, openImport, openEdit, blockWebFonts } from "./helpers.js";
 
 const ID = "13905633547d9de4e3e21f977cee9e0c";
 const RAW = `https://gist.githubusercontent.com/prof-x/${ID}/raw`;
@@ -61,6 +61,7 @@ test("a gist roster gives a short link that follows later edits to the gist", as
     // Reopening the link for editing loads the gist into the preview.
     const editor = await student.context().newPage();
     await editor.goto("/create.html");
+    await openEdit(editor);
     await editor.fill("#existingLink", classLink);
     await editor.click("#loadExisting");
     await expect(editor.locator("#csvStatus")).toHaveText(/gist lists 3 students/);

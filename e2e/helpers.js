@@ -18,6 +18,13 @@ export const shareHrefs = (page) => page.locator("a.btn-share").evaluateAll(
 export const previewNames = (page) => page.locator("#rosterList input").evaluateAll(
     (els) => els.map((el) => /** @type {HTMLInputElement} */ (el).value));
 
+/** Open the create page's collapsed "Edit an existing class link" section. @param {import("@playwright/test").Page} page */
+export async function openEdit(page) {
+    if (!(await page.locator("#editSection").evaluate((d) => /** @type {HTMLDetailsElement} */ (d).open))) {
+        await page.click("#editSection > summary");
+    }
+}
+
 /** Open the create page's collapsed import section. @param {import("@playwright/test").Page} page */
 export async function openImport(page) {
     if (!(await page.locator("#importSection").evaluate((d) => /** @type {HTMLDetailsElement} */ (d).open))) {

@@ -33,18 +33,21 @@
         <div class="pt-container pt-block--medium">
             <div class="cc-narrow">
                 <h1 class="cc-page-title">Create a Class Link</h1>
-                <p class="cc-lede">Students and the presenter open the class link you make here. They see only the roster, not this page.</p>
+                <p class="cc-lede">Use this page to create or edit class links. Copy the class link for distribution before and use during class.</p>
 
-                <div class="pt-outline-light cc-existing">
-                    <div class="pt-field">
-                        <label class="pt-field__label" for="existingLink">Edit an existing class link (optional)</label>
-                        <div class="cc-input-row">
-                            <input class="pt-input" type="text" id="existingLink" placeholder="Paste a class link to change its roster or settings" spellcheck="false">
-                            <button type="button" class="pt-btn pt-btn--secondary" id="loadExisting">Edit</button>
+                <details class="cc-disclosure cc-disclosure--first" id="editSection">
+                    <summary>Edit an existing class link</summary>
+                    <div class="cc-disclosure__body">
+                        <div class="pt-field">
+                            <label class="pt-field__label" for="existingLink">Class link to edit</label>
+                            <div class="cc-input-row">
+                                <input class="pt-input" type="text" id="existingLink" placeholder="Paste a class link to change its roster or settings" spellcheck="false">
+                                <button type="button" class="pt-btn pt-btn--secondary" id="loadExisting">Edit</button>
+                            </div>
+                            <p class="pt-field__hint cc-status" id="existingStatus">Editing keeps the same session, so students' Share links don't change.</p>
                         </div>
-                        <p class="pt-field__hint cc-status" id="existingStatus">Editing keeps the same session, so students' Share links don't change.</p>
                     </div>
-                </div>
+                </details>
 
                 <section class="cc-section" aria-labelledby="detailsHeading">
                     <h2 id="detailsHeading">Class details</h2>

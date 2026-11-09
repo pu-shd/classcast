@@ -73,8 +73,11 @@ test("on a phone, each student's Share and View stay side by side", async ({ pag
     }
 });
 
-test("the site name is smaller than the page heading", async ({ page }) => {
-    await page.goto("./");
-    const px = (/** @type {string} */ sel) => page.locator(sel).evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-    expect(await px(".pt-site-name")).toBeLessThan(await px("h1"));
-});
+for (const path of ["./", "create.html"]) {
+    test(`${path}: the ClassCast header is larger than the page title`, async ({ page }) => {
+        await page.goto(path);
+        const px = (/** @type {string} */ sel) => page.locator(sel).first().evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+        expect(await px(".pt-site-name")).toBeGreaterThan(await px("h1"));
+        expect(await px("h1")).toBeGreaterThan(await px("h2"));
+    });
+}

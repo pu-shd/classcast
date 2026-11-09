@@ -317,6 +317,7 @@ async function init() {
         try {
             config = await decodeConfig(data);
         } catch (err) {
+            $("editSection").open = true;
             setStatus("existingStatus", `${err.message}. Its session is kept; set the roster and settings again.`, "error");
             config = {};
         }
@@ -326,6 +327,7 @@ async function init() {
         state.names = config.names ?? null;
         state.gist = config.gist ?? null;
         if (config.names || config.gist) {
+            $("editSection").open = true;
             setStatus("existingStatus", "Editing an existing class link. Its session is kept, so students' Share links don't change.", "success");
         }
     }

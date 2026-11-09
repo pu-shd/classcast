@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { csv, rowNames, shareHrefs, previewNames, freshPage, openImport, blockWebFonts } from "./helpers.js";
+import { csv, rowNames, shareHrefs, previewNames, freshPage, openImport, openEdit, blockWebFonts } from "./helpers.js";
 
 test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => { throw err; });
@@ -58,6 +58,7 @@ test("editing an existing class link keeps its session and settings", async ({ p
 
     const editor = await freshPage(browser);
     await editor.goto("/create.html");
+    await openEdit(editor);
     await editor.fill("#existingLink", original);
     await editor.click("#loadExisting");
     await expect(editor.locator("#existingStatus")).toHaveText(/Editing an existing class link/);
@@ -96,6 +97,7 @@ test("bad input is refused: base URL, pasted link", async ({ page }) => {
     await page.fill("#baseUrl", "javascript:alert(1)//");
     await expect(page.locator("#configStatus")).toHaveText(/must start with https/);
     expect(await classLink(page)).toBe(before);
+    await openEdit(page);
     await page.fill("#existingLink", "not a link");
     await page.press("#existingLink", "Enter");
     await expect(page.locator("#existingStatus")).toHaveText(/isn't a class link/);
@@ -103,6 +105,7 @@ test("bad input is refused: base URL, pasted link", async ({ page }) => {
 
 test("a damaged link opened for editing keeps its session and says so", async ({ page }) => {
     await page.goto("/create.html#session=abc123&d=zBROKEN");
+    await expect(page.locator("#editSection")).toHaveAttribute("open", "");
     await expect(page.locator("#existingStatus")).toHaveText(/damaged.*session is kept/);
     expect(await classLink(page)).toBe("http://127.0.0.1:4173/#session=abc123");
 });
@@ -199,4 +202,34 @@ test("an imported CSV lands in the editor and can be corrected", async ({ page, 
         await student.goto(await page.locator("#classLink").inputValue());
         return rowNames(student);
     }).toEqual(["Alice", "Bob"]);
+});
+
+test("the page explains itself and keeps the edit field collapsed", async ({ page }) => {
+    await page.goto("/create.html");
+    await expect(page.locator(".cc-lede")).toHaveText(
+        "Use this page to create or edit class links. Copy the class link for distribution before and use during class.");
+    await expect(page.locator("#editSection")).not.toHaveAttribute("open", "");
+    await expect(page.locator("#existingLink")).toBeHidden();
+    await page.click("#editSection > summary");
+    await expect(page.locator("#existingLink")).toBeVisible();
+});
+
+test("a class link opened for editing shows the edit section open", async ({ page, browser }) => {
+    await page.goto("/create.html");
+    await page.locator("#rosterList input").first().fill("Alice");
+    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    const editor = await freshPage(browser);
+    await editor.goto(new URL(await page.locator("#classLink").inputValue()).hash.replace(/^/, "/create.html"));
+    await expect(editor.locator("#editSection")).toHaveAttribute("open", "");
+    await expect(editor.locator("#existingStatus")).toHaveText(/Editing an existing class link/);
+});
+
+test("the student list is shown in full, without its own scrollbar", async ({ page }) => {
+    await page.goto("/create.html");
+    for (let i = 0; i < 20; i++) await page.click("#addStudent");
+    const list = page.locator("#rosterList");
+    await expect(list.locator("input")).toHaveCount(40);
+    await expect(list).toHaveCSS("overflow-y", "visible");
+    const { scroll, client } = await list.evaluate((el) => ({ scroll: el.scrollHeight, client: el.clientHeight }));
+    expect(scroll).toBeLessThanOrEqual(client);
 });

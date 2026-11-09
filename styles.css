@@ -46,15 +46,16 @@ select:focus-visible {
     padding: var(--space-3) 0;
 }
 
+/* The ClassCast name outranks the page title below it. */
 .pt-site-name,
 .pt-site-name a {
-    font-size: var(--font-size-md);
+    font-size: 1.75rem;
     color: var(--color-neutral-100);
 }
 
 @media (min-width: 48rem) {
     .pt-site-name {
-        font-size: var(--font-size-md);
+        font-size: 2rem;
     }
 }
 
@@ -66,7 +67,7 @@ select:focus-visible {
 /* A plain page heading in place of the kit's dark .pt-page-title strip. */
 .cc-page-title {
     margin: 0 0 var(--space-6);
-    font-size: 1.5rem;
+    font-size: 1.375rem;
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-snug);
     color: var(--color-neutral-100);
@@ -74,13 +75,13 @@ select:focus-visible {
 
 @media (min-width: 48rem) {
     .cc-page-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
 }
 
 /* Section headings sit below the page heading in size. */
 .cc-narrow h2 {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);
 }
 
@@ -209,8 +210,9 @@ select:focus-visible {
 
 /* ---------- Create page ---------- */
 
-.cc-existing {
-    margin-bottom: var(--space-4);
+/* The edit disclosure sits right under the intro, so it needs no gap above. */
+.cc-disclosure--first {
+    margin-top: var(--space-6);
 }
 
 .cc-input-row {
@@ -234,8 +236,6 @@ select:focus-visible {
 .cc-roster-list {
     margin: var(--space-4) 0;
     padding-left: 2.5rem;
-    max-height: 28rem;
-    overflow-y: auto;
     font-family: var(--font-display);
     color: var(--color-neutral-60);
 }
