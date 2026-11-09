@@ -24,11 +24,20 @@ git submodule update --init --recursive
 
 ### Option 1: Use the Interactive Page
 
-1. Open `index.html` in a browser
-2. (Optional) Import a CSV file with student names
-3. Share the page URL with students
-4. Students click **Share** next to their name
-5. Presenter clicks **View** to display on projector
+The page is hosted at https://pu-shd.github.io/classcast/ (or open `index.html` from your own copy).
+
+**No setup:** open the page and share the link in the address bar. It lists seats Student 001 to Student 020; each student picks a number and clicks **Share**, and the presenter clicks **View** on the same number.
+
+**With your roster:**
+
+
+1. Open the page and load your roster under **Class setup**, either way:
+   - **CSV file:** the roster is stored in the class link itself.
+   - **Secret gist:** paste the gist's link. The class link points at the gist, so you can edit the roster later and the link stays the same.
+2. (Optional) Set a class title (e.g. "ORF 309 Screen Share"; the default heading is ClassCast), a room password and a self-hosted VDO.ninja base URL. All are saved in the link.
+3. Click **Copy** next to **Class link** and post it for students (Canvas, email, etc.).
+4. Students open the link and click **Share** next to their name.
+5. The presenter opens the same link on the projector computer and clicks **View**.
 
 ### Option 2: Generate Static Files with CLI
 
@@ -124,12 +133,36 @@ ID,Student Name,Major
 2,Bob Martinez,CS
 ```
 
+## Class Links
+
+Everything the page needs is in the part of the URL after `#`:
+
+```
+https://pu-shd.github.io/classcast/#session=k3j9x0q2ab&d=z...
+```
+
+- `session` keeps everyone's stream IDs the same. Links with only a `session` (from older versions) still work.
+- `d` is compressed data: either the roster names, or a reference to a gist, plus the title, base URL and password if you set them.
+
+Browsers never send the `#` part to the web server, so roster names are not uploaded to GitHub Pages. But **anyone who has the link can see the names and the room password**, so share it only with your class. To keep real names out of the link entirely, use seat numbers or initials.
+
+A link that has been cut off or edited shows an error instead of a roster. Links are limited to 500 students.
+
+### Gist Rosters
+
+1. Create a **secret** gist at https://gist.github.com containing your roster CSV. Secret gists are unlisted (not searchable), but anyone with the gist's URL can read them.
+2. Paste the gist's URL into **Class setup** and click **Load**, then choose the header and name-column options.
+3. Copy the class link. To change the roster later, edit the gist. GitHub can take up to 5 minutes to serve the new version.
+
+The page loads the gist each time it opens, so if the gist is deleted, the link shows an error.
+
 ## Web Interface Features
 
 The interactive `index.html` page includes:
 
 - **Base URL configuration** - Change VDO.ninja server on the fly
-- **CSV import** - Drag and drop or file picker
+- **CSV import** - File picker, or load from a secret gist
+- **Class link** - One link holds the roster and settings; copy it for students and the presenter
 - **Header toggle** - For CSVs with/without headers
 - **Column selector** - Auto-detects "name" columns
 
@@ -149,3 +182,17 @@ cp -r vdo.ninja /path/to/webserver/vdo.ninja
 ```
 
 VDO.ninja is purely client-side and uses public TURN/STUN servers by default, so it works without server-side configuration.
+
+## Development
+
+The page is static: `index.html`, `app.js` (page wiring), `classcast.js` (roster and link logic) and `styles.css`.
+
+```bash
+# Lint, type check and unit tests
+docker-compose run --rm test
+
+# End-to-end tests in Chromium, WebKit and Firefox
+docker-compose run --rm e2e
+```
+
+Without Docker: `npm ci`, then `npm run check` and `npx playwright install && npm run e2e`. CI runs both suites on every push and pull request.

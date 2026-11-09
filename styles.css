@@ -1,4 +1,4 @@
-/* UmbraCast - Dark theme with planetary shadow aesthetics */
+/* ClassCast - Dark theme with planetary shadow aesthetics */
 
 :root {
     --bg-primary: #0d0d1a;
@@ -64,8 +64,7 @@ h1 {
     margin-bottom: 8px;
     font-weight: 600;
     font-size: 2rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    letter-spacing: 0.5px;
     position: relative;
     z-index: 1;
     text-shadow: 0 2px 20px rgba(212, 165, 116, 0.3);
@@ -410,4 +409,89 @@ h1 {
     .csv-row {
         gap: 12px;
     }
+}
+
+/* Collapsible teacher setup */
+.setup {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.setup > summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 10px 4px;
+    margin-bottom: 10px;
+}
+
+.setup-hint {
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+/* Class link box */
+.class-link-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.class-link-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 12px;
+}
+
+.btn-copy {
+    margin-left: 0;
+    background: linear-gradient(135deg, #b8860b 0%, #d4a574 100%);
+    color: white;
+    white-space: nowrap;
+}
+
+/* Error banner for damaged class links */
+.banner {
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.banner.error {
+    background: rgba(233, 69, 96, 0.12);
+    border: 1px solid var(--accent-primary);
+    color: var(--text-primary);
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* Gist roster source */
+.gist-source {
+    margin-top: 16px;
+}
+
+.gist-source label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.gist-source input[type="text"] {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.loading {
+    padding: 16px 20px;
+    color: var(--text-muted);
 }
