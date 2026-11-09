@@ -1,4 +1,4 @@
-// UmbraCast core logic: roster parsing and VDO.ninja link building.
+// ClassCast core logic: roster parsing and VDO.ninja link building.
 // Pure functions only, so they can be unit-tested in Node without a browser.
 
 export const DEFAULT_BASE_URL = "https://vdo.ninja";
@@ -204,6 +204,7 @@ export const LIMITS = Object.freeze({
     maxStudents: 500,
     maxNameLength: 100,
     maxPasswordLength: 128,
+    maxTitleLength: 80,
     maxEncodedLength: 64 * 1024,
     maxDecodedBytes: 256 * 1024,
 });
@@ -227,6 +228,7 @@ const UNSAFE_CHARS_RE = /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2
  *   gist?: GistSource,
  *   baseUrl?: string,
  *   password?: string,
+ *   title?: string,
  * }} ClassConfig
  */
 
@@ -349,7 +351,7 @@ export function validateConfig(raw) {
     }
     const obj = /** @type {Record<string, unknown>} */ (raw);
     if (obj.v !== CONFIG_VERSION) {
-        throw new Error("Class link was made by a different version of UmbraCast");
+        throw new Error("Class link was made by a different version of ClassCast");
     }
     /** @type {ClassConfig} */
     const config = {};
@@ -376,6 +378,11 @@ export function validateConfig(raw) {
         if (typeof obj.p !== "string") throw new Error("Class link password is damaged");
         config.password = cleanText(obj.p, LIMITS.maxPasswordLength);
     }
+    if (obj.t !== undefined) {
+        if (typeof obj.t !== "string") throw new Error("Class link title is damaged");
+        const title = cleanText(obj.t, LIMITS.maxTitleLength);
+        if (title) config.title = title;
+    }
     return config;
 }
 
@@ -396,6 +403,7 @@ export async function encodeConfig(config) {
     }
     if (config.baseUrl && config.baseUrl !== DEFAULT_BASE_URL) wire.b = config.baseUrl;
     if (config.password) wire.p = config.password;
+    if (config.title) wire.t = config.title;
     const json = new TextEncoder().encode(JSON.stringify(wire));
     if (typeof CompressionStream === "function") {
         const packed = await pipeBytes(json, new CompressionStream("deflate-raw"), Infinity);

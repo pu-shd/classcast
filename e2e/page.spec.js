@@ -95,3 +95,39 @@ test("pasting a different class link into the tab loads it", async ({ page }) =>
     await expect(page.locator(".student-row")).toHaveCount(1);
     expect(await rows(page)).toEqual(["Zed"]);
 });
+
+test("the heading defaults to ClassCast, shown as written", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("h1")).toHaveText("ClassCast");
+    await expect(page.locator("h1")).toHaveCSS("text-transform", "none");
+    await expect(page).toHaveTitle("ClassCast - Classroom Screen Share");
+});
+
+test("a class title set by the teacher travels in the link", async ({ page, browser }) => {
+    await page.goto("/");
+    await page.fill("#classTitle", "ORF 309 Screen Share");
+    await expect(page.locator("h1")).toHaveText("ORF 309 Screen Share");
+    await expect(page).toHaveTitle("ORF 309 Screen Share - ClassCast");
+    await expect(page).toHaveURL(/&d=z/);
+    const classLink = await page.locator("#classLink").inputValue();
+
+    const other = await (await browser.newContext()).newPage();
+    other.on("pageerror", (err) => { throw err; });
+    await other.goto(classLink);
+    await expect(other.locator("h1")).toHaveText("ORF 309 Screen Share");
+    await expect(other).toHaveTitle("ORF 309 Screen Share - ClassCast");
+    await expect(other.locator("#classTitle")).toHaveValue("ORF 309 Screen Share");
+
+    await page.fill("#classTitle", "");
+    await expect(page.locator("h1")).toHaveText("ClassCast");
+    await expect(page).toHaveURL(/#session=[a-z0-9]+$/);
+});
+
+test("a hostile title renders as text", async ({ page }) => {
+    const evil = '<img src=x onerror="window.pwned=1">';
+    const data = "j" + Buffer.from(JSON.stringify({ v: 1, t: evil })).toString("base64url");
+    await page.goto(`/#session=abc123&d=${data}`);
+    await expect(page.locator("h1")).toHaveText(evil);
+    await expect(page.locator("h1 img")).toHaveCount(0);
+    expect(await page.evaluate(() => /** @type {any} */ (window).pwned)).toBeUndefined();
+});

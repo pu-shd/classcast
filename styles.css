@@ -1,4 +1,4 @@
-/* UmbraCast - Dark theme with planetary shadow aesthetics */
+/* ClassCast - Dark theme with planetary shadow aesthetics */
 
 :root {
     --bg-primary: #0d0d1a;
@@ -64,8 +64,7 @@ h1 {
     margin-bottom: 8px;
     font-weight: 600;
     font-size: 2rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
+    letter-spacing: 0.5px;
     position: relative;
     z-index: 1;
     text-shadow: 0 2px 20px rgba(212, 165, 116, 0.3);

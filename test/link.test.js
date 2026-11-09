@@ -107,3 +107,13 @@ test("parseHash/buildHash round-trip and stay compatible with old session-only l
     assert.deepEqual(parseHash("#" + hash), { session: "abc123", data: "zAB-_c" });
     assert.equal(buildHash("abc123", null), "session=abc123");
 });
+
+test("a class title round-trips through the link, cleaned and capped", async () => {
+    const encoded = await encodeConfig({ names: ["A"], title: "ORF 309 Screen Share" });
+    assert.deepEqual(await decodeConfig(encoded), { names: ["A"], title: "ORF 309 Screen Share" });
+    assert.deepEqual(validateConfig({ v: 1, t: " ORF‮ 309\n " }), { title: "ORF 309" });
+    assert.equal(validateConfig({ v: 1, t: "x".repeat(500) }).title?.length, LIMITS.maxTitleLength);
+    assert.deepEqual(validateConfig({ v: 1, t: "   " }), {});
+    assert.throws(() => validateConfig({ v: 1, t: 7 }), /title is damaged/);
+    assert.deepEqual(await decodeConfig(await encodeConfig({ title: "" })), {});
+});

@@ -1,4 +1,4 @@
-// UmbraCast page wiring: setup panel, class link, roster rendering.
+// ClassCast page wiring: setup panel, class link, roster rendering.
 import {
     DEFAULT_BASE_URL, LIMITS, assignIds, parseCSV, detectNameColumn, rosterNamesFromCSV,
     shareUrl, viewUrl, renderStudentRows, renderColumnOptions, cleanText,
@@ -30,8 +30,11 @@ const DEMO_STUDENTS = [
 const LINK_NOTE_NAMES = "The roster lives in the link itself and is never uploaded. Anyone with the link can see the names and room password.";
 const LINK_NOTE_GIST = "The roster is read from your gist each time the page opens; GitHub can take up to 5 minutes to show edits. Anyone with the link can see the names and room password.";
 
+const DEFAULT_TITLE = "ClassCast";
+
 const state = {
     session: "",
+    title: "",
     baseUrl: DEFAULT_BASE_URL,
     password: "",
     names: null, // roster carried in the link, or null
@@ -67,6 +70,11 @@ function showLoading(text) {
     $("studentList").replaceChildren(div);
 }
 
+function renderTitle() {
+    $("pageTitle").textContent = state.title || DEFAULT_TITLE;
+    document.title = state.title ? `${state.title} - ${DEFAULT_TITLE}` : `${DEFAULT_TITLE} - Classroom Screen Share`;
+}
+
 function renderStudentList() {
     renderStudentRows($("studentList"), students, links);
 }
@@ -74,13 +82,14 @@ function renderStudentList() {
 // Keep the address bar (and the Class link box) in sync with the setup.
 async function writeHash() {
     const seq = ++hashWriteSeq;
-    const hasData = state.names || state.gist || state.password || state.baseUrl !== DEFAULT_BASE_URL;
+    const hasData = state.names || state.gist || state.password || state.title || state.baseUrl !== DEFAULT_BASE_URL;
     const data = hasData
         ? await encodeConfig({
             names: state.names ?? undefined,
             gist: state.gist ?? undefined,
             baseUrl: state.baseUrl,
             password: state.password,
+            title: state.title,
         })
         : null;
     if (seq !== hashWriteSeq) return; // a newer change already won
@@ -97,11 +106,13 @@ function onConfigInput() {
     try {
         state.baseUrl = normalizeBaseUrl($("baseUrl").value);
         state.password = cleanText($("roomPassword").value, LIMITS.maxPasswordLength);
+        state.title = cleanText($("classTitle").value, LIMITS.maxTitleLength);
         setStatus("configStatus", "");
     } catch (err) {
         setStatus("configStatus", err.message, "error");
         return; // keep the last valid settings
     }
+    renderTitle();
     renderStudentList();
     writeHash();
 }
@@ -222,6 +233,9 @@ async function init() {
             const config = await decodeConfig(data);
             if (config.baseUrl) state.baseUrl = config.baseUrl;
             if (config.password) state.password = config.password;
+            if (config.title) state.title = config.title;
+            $("classTitle").value = state.title;
+            renderTitle();
             $("baseUrl").value = state.baseUrl;
             $("roomPassword").value = state.password;
             if (config.names) {
@@ -252,6 +266,7 @@ async function init() {
 
 $("baseUrl").addEventListener("input", onConfigInput);
 $("roomPassword").addEventListener("input", onConfigInput);
+$("classTitle").addEventListener("input", onConfigInput);
 $("csvFile").addEventListener("change", handleFileSelect);
 $("hasHeader").addEventListener("change", updateColumnSelector);
 $("columnSelect").addEventListener("change", (e) => importFromColumn(parseInt(e.target.value, 10)));

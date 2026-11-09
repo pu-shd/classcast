@@ -29,7 +29,7 @@ The page is hosted at https://pu-shd.github.io/classcast/ (or open `index.html` 
 1. Open the page and load your roster under **Class setup**, either way:
    - **CSV file:** the roster is stored in the class link itself.
    - **Secret gist:** paste the gist's link. The class link points at the gist, so you can edit the roster later and the link stays the same.
-2. (Optional) Set a room password and a self-hosted VDO.ninja base URL. Both are saved in the link.
+2. (Optional) Set a class title (e.g. "ORF 309 Screen Share"; the default heading is ClassCast), a room password and a self-hosted VDO.ninja base URL. All are saved in the link.
 3. Click **Copy** next to **Class link** and post it for students (Canvas, email, etc.).
 4. Students open the link and click **Share** next to their name.
 5. The presenter opens the same link on the projector computer and clicks **View**.
@@ -137,7 +137,7 @@ https://pu-shd.github.io/classcast/#session=k3j9x0q2ab&d=z...
 ```
 
 - `session` keeps everyone's stream IDs the same. Links with only a `session` (from older versions) still work.
-- `d` is compressed data: either the roster names, or a reference to a gist, plus the base URL and password if you set them.
+- `d` is compressed data: either the roster names, or a reference to a gist, plus the title, base URL and password if you set them.
 
 Browsers never send the `#` part to the web server, so roster names are not uploaded to GitHub Pages. But **anyone who has the link can see the names and the room password**, so share it only with your class. To keep real names out of the link entirely, use seat numbers or initials.
 
