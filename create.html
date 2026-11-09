@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex">
+    <title>Create a Class Link - ClassCast</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Create a Class Link</h1>
+    <p class="subtitle">Students and the presenter open the class link; this page isn't shown to them.</p>
+
+    <div class="config">
+        <label for="existingLink">Edit an existing class link (optional):</label>
+        <div class="class-link-row">
+            <input type="text" id="existingLink" placeholder="Paste a class link to change its roster or settings" spellcheck="false">
+            <button type="button" class="btn btn-copy" id="loadExisting">Edit</button>
+        </div>
+        <div class="csv-status" id="existingStatus">Editing keeps the same session, so students' Share links don't change.</div>
+    </div>
+
+    <div class="config">
+        <label for="classTitle">Class title (shown at the top of the class page):</label>
+        <input type="text" id="classTitle" value="" placeholder="e.g. ORF 309 Screen Share" maxlength="80">
+        <label for="baseUrl" style="margin-top: 12px;">VDO.ninja Base URL:</label>
+        <input type="text" id="baseUrl" value="https://vdo.ninja" placeholder="https://vdo.ninja or your self-hosted URL" spellcheck="false">
+        <label for="roomPassword" style="margin-top: 12px;">Room Password (optional, share with class):</label>
+        <input type="text" id="roomPassword" value="" placeholder="Leave empty for no password" spellcheck="false">
+        <div class="csv-status" id="configStatus"></div>
+    </div>
+
+    <div class="csv-import">
+        <h3>Student roster (optional; without one the class page lists Student 001–020)</h3>
+        <div class="csv-row">
+            <input type="file" id="csvFile" accept=".csv,.txt">
+            <label>
+                <input type="checkbox" id="hasHeader" checked>
+                First row is header
+            </label>
+            <label class="column-select" id="columnSelectLabel">
+                Name column:
+                <select id="columnSelect"></select>
+            </label>
+        </div>
+        <div class="gist-source">
+            <label for="gistUrl">Or load the CSV from a secret gist (edit the gist later and the class link stays the same):</label>
+            <div class="class-link-row">
+                <input type="text" id="gistUrl" placeholder="https://gist.github.com/you/1a2b3c4d…" spellcheck="false">
+                <button type="button" class="btn btn-copy" id="loadGist">Load</button>
+            </div>
+        </div>
+        <div class="csv-status" id="csvStatus"></div>
+    </div>
+
+    <div class="config class-link">
+        <label for="classLink">Class link: post this for students and open it on the presenter's computer</label>
+        <div class="class-link-row">
+            <input type="text" id="classLink" readonly>
+            <button type="button" class="btn btn-copy" id="copyLink">Copy</button>
+            <a class="btn btn-view" id="openLink" href="./" target="_blank" rel="noopener">Open</a>
+        </div>
+        <div class="csv-status" id="linkStatus"></div>
+    </div>
+
+    <div class="config preview">
+        <h3 id="previewHeading">Roster preview</h3>
+        <ol id="preview"></ol>
+    </div>
+
+    <script type="module" src="create-page.js"></script>
+</body>
+</html>

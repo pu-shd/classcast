@@ -4,7 +4,7 @@ FROM node:24.11.1-alpine3.22@sha256:2867d550cf9d8bb50059a0fff528741f11a84d985c73
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
-COPY eslint.config.js tsconfig.json playwright.config.js index.html app.js classcast.js ./
+COPY eslint.config.js tsconfig.json playwright.config.js index.html create.html class-page.js create-page.js classcast.js ./
 COPY test ./test
 COPY e2e ./e2e
 

@@ -411,26 +411,6 @@ h1 {
     }
 }
 
-/* Collapsible teacher setup */
-.setup {
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
-}
-
-.setup > summary {
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-weight: 500;
-    padding: 10px 4px;
-    margin-bottom: 10px;
-}
-
-.setup-hint {
-    color: var(--text-muted);
-    font-weight: normal;
-}
-
 /* Class link box */
 .class-link-row {
     display: flex;
@@ -494,4 +474,44 @@ h1 {
 .loading {
     padding: 16px 20px;
     color: var(--text-muted);
+}
+
+/* Create page */
+.subtitle {
+    margin-top: 0;
+}
+
+.preview h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.preview ol {
+    margin: 0;
+    padding-left: 28px;
+    color: var(--text-primary);
+    line-height: 1.6;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.class-link-row .btn-view {
+    margin-left: 0;
+    white-space: nowrap;
+}
+
+/* Class page */
+.page-footer {
+    margin-top: 24px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 1;
+}
+
+.page-footer a {
+    color: var(--accent-secondary);
 }
