@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-    nameToId, assignIds, parseCSV, detectNameColumn, namesFromRows, shareUrl, viewUrl,
+    nameToId, assignIds, parseCSV, detectNameColumn, namesFromRows, shareUrl, viewUrl, defaultStudents,
 } from "../classcast.js";
 
 test("nameToId lowercases, collapses separators, trims and caps length", () => {
@@ -51,4 +51,13 @@ test("viewUrl builds a high-quality scene link with optional password", () => {
         viewUrl("https://x.edu/vdo", "uc_abc_alice", "pw"),
         "https://x.edu/vdo/?view=uc_abc_alice&scene&videobitrate=12000&scale=100&sharperscreen&codec=vp9&password=pw",
     );
+});
+
+test("defaultStudents numbers placeholder seats from 001", () => {
+    const seats = defaultStudents();
+    assert.equal(seats.length, 20);
+    assert.deepEqual(seats[0], { name: "Student 001", id: "student_001" });
+    assert.deepEqual(seats[19], { name: "Student 020", id: "student_020" });
+    assert.equal(new Set(seats.map((s) => s.id)).size, 20);
+    assert.deepEqual(defaultStudents(2).map((s) => s.name), ["Student 001", "Student 002"]);
 });

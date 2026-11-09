@@ -3,29 +3,13 @@ import {
     DEFAULT_BASE_URL, LIMITS, assignIds, parseCSV, detectNameColumn, rosterNamesFromCSV,
     shareUrl, viewUrl, renderStudentRows, renderColumnOptions, cleanText,
     normalizeBaseUrl, newSessionId, encodeConfig, decodeConfig, parseHash, buildHash,
-    parseGistRef, gistPageUrl, fetchGistText,
+    parseGistRef, gistPageUrl, fetchGistText, defaultStudents,
 } from "./classcast.js";
 
 const $ = (id) => document.getElementById(id);
 
-// Shown until the teacher imports a roster; not written into the link.
-const DEMO_STUDENTS = [
-    { name: "Alice Chen", id: "alice" },
-    { name: "Bob Martinez", id: "bob" },
-    { name: "Carol Johnson", id: "carol" },
-    { name: "David Kim", id: "david" },
-    { name: "Emma Wilson", id: "emma" },
-    { name: "Frank Brown", id: "frank" },
-    { name: "Grace Lee", id: "grace" },
-    { name: "Henry Davis", id: "henry" },
-    { name: "Iris Patel", id: "iris" },
-    { name: "Jack Thompson", id: "jack" },
-    { name: "Katie Moore", id: "katie" },
-    { name: "Liam Garcia", id: "liam" },
-    { name: "Maya Anderson", id: "maya" },
-    { name: "Noah Taylor", id: "noah" },
-    { name: "Olivia White", id: "olivia" }
-];
+// Numbered seats shown until the teacher loads a roster; not written into the link.
+const DEFAULT_STUDENTS = defaultStudents();
 
 const LINK_NOTE_NAMES = "The roster lives in the link itself and is never uploaded. Anyone with the link can see the names and room password.";
 const LINK_NOTE_GIST = "The roster is read from your gist each time the page opens; GitHub can take up to 5 minutes to show edits. Anyone with the link can see the names and room password.";
@@ -40,7 +24,7 @@ const state = {
     names: null, // roster carried in the link, or null
     gist: null, // { user, id, file?, hasHeader, column } when the roster comes from a gist
 };
-let students = DEMO_STUDENTS;
+let students = DEFAULT_STUDENTS;
 let csvText = null; // CSV being imported, from a file or a gist
 let csvGistRef = null; // set when csvText came from a gist
 let hashWriteSeq = 0;
@@ -222,7 +206,7 @@ async function copyClassLink() {
 }
 
 // Load whatever the link carries, then render. On any failure, show the
-// error and no roster: falling back to the demo would look right but be wrong.
+// error and no roster: falling back to the default seats would look right but be wrong.
 async function init() {
     const { session, data } = parseHash(location.hash);
     state.session = session ?? newSessionId();

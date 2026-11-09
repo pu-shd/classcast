@@ -75,7 +75,7 @@ test("a non-gist URL is refused before any request is made", async ({ page }) =>
     await page.press("#gistUrl", "Enter");
     await expect(page.locator("#csvStatus")).toHaveText(/isn't a gist link/);
     expect(seen).toEqual([]);
-    await expect(page.locator(".student-row")).toHaveCount(15);
+    await expect(page.locator(".student-row")).toHaveCount(20);
 });
 
 test("a gist that can't be reached reports the failure", async ({ page }) => {

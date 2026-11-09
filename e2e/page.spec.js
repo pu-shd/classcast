@@ -18,9 +18,12 @@ test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => { throw err; });
 });
 
-test("a fresh page shows the demo roster and a session-only link", async ({ page }) => {
+test("a fresh page shows numbered seats and a session-only link", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".student-row")).toHaveCount(15);
+    await expect(page.locator(".student-row")).toHaveCount(20);
+    const seats = await rows(page);
+    expect([seats[0], seats[19]]).toEqual(["Student 001", "Student 020"]);
+    expect((await shareHrefs(page))[19]).toMatch(/\?push=uc_[a-z0-9]+_student_020&/);
     await expect(page).toHaveURL(/#session=[a-z0-9]{10}$/);
     await expect(page.locator("#classLink")).toHaveValue(page.url());
     await expect(page.locator("#setup")).toHaveAttribute("open", "");
@@ -83,8 +86,8 @@ test("hostile names in a CSV render as text", async ({ page }) => {
 
 test("old session-only links keep working with the same stream IDs", async ({ page }) => {
     await page.goto("/#session=abc123");
-    await expect(page.locator(".student-row")).toHaveCount(15);
-    expect((await shareHrefs(page))[0]).toMatch(/\?push=uc_abc123_alice&/);
+    await expect(page.locator(".student-row")).toHaveCount(20);
+    expect((await shareHrefs(page))[0]).toMatch(/\?push=uc_abc123_student_001&/);
     await expect(page).toHaveURL(/#session=abc123$/);
 });
 

@@ -26,6 +26,11 @@ git submodule update --init --recursive
 
 The page is hosted at https://pu-shd.github.io/classcast/ (or open `index.html` from your own copy).
 
+**No setup:** open the page and share the link in the address bar. It lists seats Student 001 to Student 020; each student picks a number and clicks **Share**, and the presenter clicks **View** on the same number.
+
+**With your roster:**
+
+
 1. Open the page and load your roster under **Class setup**, either way:
    - **CSV file:** the roster is stored in the class link itself.
    - **Secret gist:** paste the gist's link. The class link points at the gist, so you can edit the roster later and the link stays the same.

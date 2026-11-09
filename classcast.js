@@ -44,6 +44,16 @@ export function assignIds(names) {
 }
 
 /**
+ * Placeholder seats shown when no roster is loaded: Student 001, 002, ...
+ * Students pick a seat number, so the page works with no setup at all.
+ * @param {number} [count]
+ * @returns {Student[]}
+ */
+export function defaultStudents(count = 20) {
+    return assignIds(Array.from({ length: count }, (_, i) => `Student ${String(i + 1).padStart(3, "0")}`));
+}
+
+/**
  * Parse CSV text. Handles quoted fields and escaped quotes; skips blank lines.
  * @param {string} text
  * @returns {ParsedCSV}
