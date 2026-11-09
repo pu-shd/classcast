@@ -41,6 +41,49 @@ select:focus-visible {
 
 /* ---------- Page layout ---------- */
 
+/* Compact site header: the kit's site-branding row at a quieter size. */
+.pt-site-branding {
+    padding: var(--space-3) 0;
+}
+
+.pt-site-name,
+.pt-site-name a {
+    font-size: var(--font-size-md);
+    color: var(--color-neutral-100);
+}
+
+@media (min-width: 48rem) {
+    .pt-site-name {
+        font-size: var(--font-size-md);
+    }
+}
+
+.pt-site-slogan {
+    margin-top: 0;
+    font-size: var(--font-size-xs);
+}
+
+/* A plain page heading in place of the kit's dark .pt-page-title strip. */
+.cc-page-title {
+    margin: 0 0 var(--space-6);
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-snug);
+    color: var(--color-neutral-100);
+}
+
+@media (min-width: 48rem) {
+    .cc-page-title {
+        font-size: 1.75rem;
+    }
+}
+
+/* Section headings sit below the page heading in size. */
+.cc-narrow h2 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+}
+
 /* Forms and lists read best at a comfortable measure inside the 90rem container. */
 .cc-narrow {
     max-width: 48rem;
@@ -327,30 +370,4 @@ select:focus-visible {
 
 .cc-link-panel h2 {
     margin-top: 0;
-}
-
-/* ---------- Footer ---------- */
-
-/* The kit's grayscale filter leaves the shield's dark lettering unreadable
-   on the dark footer; reverse it to white, as the kit does for the header
-   wordmark. */
-.pt-subfooter__shield img,
-.pt-subfooter__shield:hover img {
-    filter: brightness(0) invert(1);
-}
-
-.cc-footer-grid {
-    display: grid;
-    gap: var(--space-6);
-    grid-template-columns: 1fr;
-}
-
-@media (min-width: 48rem) {
-    .cc-footer-grid {
-        grid-template-columns: 2fr 1fr;
-    }
-}
-
-.cc-footer-grid p {
-    margin: 0;
 }

@@ -181,12 +181,9 @@ VDO.ninja is purely client-side and uses public TURN/STUN servers by default, so
 
 ## Design
 
-The pages use **Paper Tiger**, the design kit for Princeton ORFE companion apps, copied into `vendor/paper-tiger/` (see its README for the source commit). They follow the kit's page structure: Princeton bar, site name, dark page-title strip, and the footer with the orange top border. ClassCast's own styles in `styles.css` build on the kit's tokens. Two deliberate differences from the kit:
+The pages use **Paper Tiger**, the design kit for Princeton ORFE companion apps, copied into `vendor/paper-tiger/` (see its README for the source commit). ClassCast uses the kit's tokens, type, buttons and form fields, with a plain header: the site name and a small page heading. It leaves out the kit's Princeton bar, dark page-title strip and footer.
 
-- **Primary buttons** use dark text on Princeton orange (6.2:1 contrast), not white (3.0:1, which fails WCAG AA). The kit's own comments call for dark text.
-- **Footer shield** is shown in white, like the header wordmark, because the kit's grayscale treatment leaves its lettering unreadable on the dark footer.
-
-The kit's Adobe Typekit fonts only work on approved domains, so ClassCast uses the kit's open fallbacks (Source Sans 3 and Source Serif 4).
+Primary buttons use dark text on Princeton orange (6.2:1 contrast), not the kit's white (3.0:1, which fails WCAG AA); the kit's own comments call for dark text. The kit's Adobe Typekit fonts only work on approved domains, so ClassCast uses the kit's open fallbacks (Source Sans 3 and Source Serif 4).
 
 ## Development
 

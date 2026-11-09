@@ -10,15 +10,19 @@ test.beforeEach(async ({ page }) => {
 });
 
 for (const path of ["./", "create.html"]) {
-    test(`${path}: Princeton bar, site name, footer and skip link`, async ({ page }) => {
+    test(`${path}: plain chrome: site name, small heading, skip link; no bar, strip or footer`, async ({ page }) => {
         await page.goto(path);
-        const logo = page.locator(".pt-princeton-bar img");
-        await expect(logo).toHaveAttribute("alt", "Princeton University");
-        expect(await logo.evaluate((img) => /** @type {HTMLImageElement} */ (img).naturalWidth)).toBeGreaterThan(0);
         await expect(page.locator(".pt-site-name")).toHaveText("ClassCast");
-        await expect(page.locator(".pt-footer")).toContainText("The Trustees of Princeton University");
-        await expect(page.locator(".pt-year")).toHaveText(String(new Date().getFullYear()));
-        await expect(page.locator(".pt-footer")).toHaveCSS("border-top-color", "rgb(231, 117, 0)");
+        await expect(page.locator(".pt-princeton-bar, .pt-page-title, .pt-footer, footer, img")).toHaveCount(0);
+
+        const h1 = page.locator("h1");
+        await expect(h1).toHaveCount(1);
+        await expect(h1).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+        await expect(h1).toHaveCSS("color", "rgb(18, 18, 18)");
+        const size = parseFloat(await h1.evaluate((el) => getComputedStyle(el).fontSize));
+        expect(size).toBeLessThanOrEqual(28);
+        const h2 = parseFloat(await page.locator("h2").first().evaluate((el) => getComputedStyle(el).fontSize));
+        expect(h2).toBeLessThan(size);
 
         await page.keyboard.press("Tab");
         const skip = page.locator(".pt-skiplink");
@@ -67,4 +71,10 @@ test("on a phone, each student's Share and View stay side by side", async ({ pag
         expect(Math.abs(share.y - view.y)).toBeLessThan(2);
         expect(view.x).toBeGreaterThan(share.x);
     }
+});
+
+test("the site name is smaller than the page heading", async ({ page }) => {
+    await page.goto("./");
+    const px = (/** @type {string} */ sel) => page.locator(sel).evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+    expect(await px(".pt-site-name")).toBeLessThan(await px("h1"));
 });

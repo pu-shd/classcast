@@ -371,6 +371,5 @@ $("addStudent").addEventListener("click", () => insertRow(-1));
 $("resetRoster").addEventListener("click", resetRoster);
 $("detachGist").addEventListener("click", detachGist);
 window.addEventListener("hashchange", () => location.reload());
-for (const el of document.querySelectorAll(".pt-year")) el.textContent = String(new Date().getFullYear());
 
 init();

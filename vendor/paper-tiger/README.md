@@ -6,8 +6,11 @@ Design kit for Princeton ORFE companion apps, copied unmodified from
 | File | Kit source |
 |---|---|
 | tokens.css, fonts.css | tokens/ |
-| layout.css, header.css, footer.css, buttons.css, forms.css | components/ |
-| logos/pu-logo.svg, logos/pu-logo-stacked.svg, logos/favicon.ico | assets/logos/ |
+| layout.css, header.css, buttons.css, forms.css | components/ |
+| logos/favicon.ico | assets/logos/ |
+
+ClassCast doesn't use the kit's Princeton bar, footer or page-title strip,
+so footer.css and the PU logos aren't copied.
 
 Don't edit these files; ClassCast's own styles and any overrides live in
 `styles.css`. To update, copy the same files from a newer kit commit and
