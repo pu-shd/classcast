@@ -75,7 +75,7 @@ test("validateConfig refuses script and non-https base URLs from links", () => {
 });
 
 test("validateConfig cleans names: control/bidi characters, whitespace, length", () => {
-    const config = validateConfig({ v: 1, n: ["  Al‮ice\u0000  Chen ", "x".repeat(500)] });
+    const config = validateConfig({ v: 1, n: ["  Al\u202Eice\u0000  Chen ", "x".repeat(500)] });
     assert.deepEqual(config.names, ["Alice Chen", "x".repeat(LIMITS.maxNameLength)]);
 });
 

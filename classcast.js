@@ -212,7 +212,7 @@ const CONFIG_VERSION = 1;
 const SESSION_RE = /^[a-z0-9]{4,32}$/i;
 // C0/C1 controls plus bidi overrides and isolates, which can disguise names.
 // eslint-disable-next-line no-control-regex
-const UNSAFE_CHARS_RE = /[\u0000-\u001f\u007f-\u009f‎‏‪-‮⁦-⁩]/g;
+const UNSAFE_CHARS_RE = /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
 
 /**
  * @typedef {{
