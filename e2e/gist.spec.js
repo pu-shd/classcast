@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { rowNames as names, previewNames, shareHrefs, jdata, openImport } from "./helpers.js";
+import { rowNames as names, previewNames, shareHrefs, jdata, openImport, blockWebFonts } from "./helpers.js";
 
 const ID = "13905633547d9de4e3e21f977cee9e0c";
 const RAW = `https://gist.githubusercontent.com/prof-x/${ID}/raw`;
@@ -11,7 +11,7 @@ const RAW = `https://gist.githubusercontent.com/prof-x/${ID}/raw`;
  */
 async function fakeGist(context, reply) {
     const seen = /** @type {string[]} */ ([]);
-    await context.route(/^https?:\/\/(?!127\.0\.0\.1:4173\/)/, async (route) => {
+    await context.route(/^https?:\/\/(?!127\.0\.0\.1:4173\/|fonts\.(?:googleapis|gstatic)\.com\/)/, async (route) => {
         const url = route.request().url();
         seen.push(url);
         if (url === RAW) {
@@ -27,6 +27,7 @@ async function fakeGist(context, reply) {
 
 test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => { throw err; });
+    await blockWebFonts(page.context());
 });
 
 test("a gist roster gives a short link that follows later edits to the gist", async ({ page, browser }) => {

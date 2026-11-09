@@ -1,206 +1,289 @@
-/* ClassCast - Dark theme with planetary shadow aesthetics */
+/*
+ * ClassCast styles, layered on the Paper Tiger kit (vendor/paper-tiger).
+ * Kit classes (pt-*) are used as-is; ClassCast's own blocks use cc-*.
+ * Colors, type and spacing come from the kit's tokens (tokens.css).
+ */
 
-:root {
-    --bg-primary: #0d0d1a;
-    --bg-secondary: #121225;
-    --bg-card: #1a1a2e;
-    --text-primary: #ffffff;
-    --text-secondary: #b8c5d6;
-    --text-muted: #6b7a8f;
-    --accent-primary: #e94560;
-    --accent-secondary: #d4a574;
-    --accent-share: #27ae60;
-    --accent-view: #3498db;
-    --border-color: #2a3f5f;
-    --shadow: rgba(0, 0, 0, 0.4);
-    --ring-gold: rgba(212, 165, 116, 0.15);
-    --ring-silver: rgba(184, 197, 214, 0.1);
-    --umbra: rgba(0, 0, 0, 0.7);
-    --penumbra: rgba(0, 0, 0, 0.3);
+/* ---------- Kit overrides ---------- */
+
+/* Primary buttons: the kit's buttons.css says the orange fill keeps dark
+   text "for AA contrast", but its rule sets white (3.0:1 on #e77500, which
+   fails WCAG AA). Use dark text (6.2:1), and white on the darker hover
+   fill (4.6:1). */
+.pt-btn--primary {
+    color: var(--color-neutral-100);
+}
+.pt-btn--primary:hover,
+.pt-btn--primary:focus {
+    color: var(--color-white);
 }
 
-* {
-    box-sizing: border-box;
+/* Shorten the kit's transitions for people who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
 }
 
-/* Background with subtle planetary rings */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 30px 20px;
-    background:
-        /* Outer ring - faint */
-        radial-gradient(ellipse 200% 100% at 50% -50%, var(--ring-silver) 0%, transparent 50%),
-        /* Inner ring - golden */
-        radial-gradient(ellipse 150% 80% at 50% -30%, var(--ring-gold) 0%, transparent 40%),
-        /* Planet shadow across rings (umbra) */
-        linear-gradient(180deg, transparent 0%, var(--umbra) 10%, var(--penumbra) 20%, transparent 35%),
-        /* Base gradient */
-        linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-    min-height: 100vh;
-    color: var(--text-primary);
-    position: relative;
+/* Keyboard focus ring on everything interactive (kit contract). */
+summary:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--color-focus-outline);
+    outline-offset: 2px;
 }
 
-/* Decorative curved shadow element */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 200px;
-    background:
-        radial-gradient(ellipse 120% 200% at 50% 0%, transparent 45%, var(--umbra) 50%, transparent 55%);
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.6;
+[hidden] {
+    display: none !important;
 }
 
-h1 {
-    text-align: center;
-    color: var(--text-primary);
-    margin-bottom: 8px;
-    font-weight: 600;
-    font-size: 2rem;
-    letter-spacing: 0.5px;
-    position: relative;
-    z-index: 1;
-    text-shadow: 0 2px 20px rgba(212, 165, 116, 0.3);
+/* ---------- Page layout ---------- */
+
+/* Forms and lists read best at a comfortable measure inside the 90rem container. */
+.cc-narrow {
+    max-width: 48rem;
 }
 
-.subtitle {
-    text-align: center;
-    color: var(--text-secondary);
-    margin-bottom: 30px;
-    font-size: 1.1rem;
-    position: relative;
-    z-index: 1;
+.cc-section {
+    margin-top: var(--space-10);
 }
 
-/* Configuration panel */
-.config {
-    background: var(--bg-card);
-    padding: 18px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow:
-        0 4px 20px var(--shadow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    position: relative;
-    z-index: 1;
+.cc-section > h2:first-child,
+.cc-narrow > section:first-child > h2:first-child {
+    margin-top: 0;
 }
 
-.config label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+.cc-lede {
+    margin-top: 0;
+    font-size: var(--font-size-md);
 }
 
-.config input[type="text"] {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 14px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    transition: border-color 0.2s, box-shadow 0.2s;
+/* ---------- Alerts and status lines ---------- */
+
+.cc-alert {
+    margin-bottom: var(--space-8);
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-brand-10);
+    border-left: 4px solid var(--color-brand-70);
+    color: var(--color-brand-90);
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-semibold);
 }
 
-.config input[type="text"]:focus {
-    outline: none;
-    border-color: var(--accent-secondary);
-    box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.2);
+.cc-status {
+    min-height: 1.2em;
+    margin: var(--space-1) 0 0;
 }
 
-.config input[type="text"]::placeholder {
-    color: var(--text-muted);
+.cc-status--error {
+    color: var(--color-brand-90);
+    font-weight: var(--font-weight-semibold);
 }
 
-/* CSV Import section */
-.csv-import {
-    background: var(--bg-card);
-    padding: 18px 20px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    box-shadow:
-        0 4px 20px var(--shadow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border-color);
-    position: relative;
-    z-index: 1;
+.cc-status--success {
+    color: var(--color-neutral-85);
 }
 
-.csv-import h3 {
-    margin: 0 0 14px 0;
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    font-weight: 500;
+.cc-status--success::before {
+    content: "✓ ";
+    color: var(--color-brand-80);
+    font-weight: var(--font-weight-bold);
 }
 
-.csv-row {
+/* ---------- Class page roster ---------- */
+
+.cc-roster {
+    border-top: 1px solid var(--color-neutral-10);
+}
+
+/* Row spacing and dividers follow the kit's .pt-list--compact (cards.css,
+   not vendored). */
+.student-row {
     display: flex;
-    gap: 20px;
-    align-items: center;
     flex-wrap: wrap;
-}
-
-.csv-row label {
-    display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    color: var(--text-secondary);
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-neutral-10);
+}
+
+.student-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex: 0 0 auto;
+}
+
+.student-name {
+    flex: 1 1 12rem;
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-md);
+    color: var(--color-neutral-100);
+}
+
+.student-id {
+    margin-left: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-regular);
+    color: var(--color-neutral-60);
+}
+
+.student-row .pt-btn {
+    min-width: 5.5rem;
+}
+
+.cc-loading {
+    padding: var(--space-4) 0;
+    font-family: var(--font-display);
+    color: var(--color-neutral-60);
+}
+
+.cc-steps {
+    padding-left: 1.25rem;
+}
+
+.cc-steps li {
+    margin-bottom: var(--space-2);
+}
+
+.cc-steps em {
+    font-style: normal;
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-bold);
+}
+
+.cc-create-note {
+    margin-top: var(--space-10);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-neutral-10);
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
+    color: var(--color-neutral-60);
+}
+
+/* ---------- Create page ---------- */
+
+.cc-existing {
+    margin-bottom: var(--space-4);
+}
+
+.cc-input-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.cc-input-row .pt-input {
+    flex: 1 1 16rem;
+    width: auto;
+    min-width: 0;
+}
+
+.cc-mono {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+}
+
+/* Roster editor: one numbered name field per student */
+.cc-roster-list {
+    margin: var(--space-4) 0;
+    padding-left: 2.5rem;
+    max-height: 28rem;
+    overflow-y: auto;
+    font-family: var(--font-display);
+    color: var(--color-neutral-60);
+}
+
+.cc-roster-list li {
+    margin-bottom: var(--space-2);
+}
+
+.roster-row {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+}
+
+.roster-row .pt-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.4rem 0.6rem;
+}
+
+.roster-row .pt-input[readonly] {
+    background: var(--color-neutral-5);
+    border-style: dashed;
+    color: var(--color-neutral-85);
+}
+
+.cc-btn-remove {
+    padding: 0.3rem 0.65rem;
+    font-size: 1.1rem;
+    line-height: 1;
+    border-width: 1px;
+}
+
+.cc-btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: var(--font-size-xs);
+}
+
+.cc-btn-text {
+    padding: 0.625rem 0.25rem;
+    border: 0;
+    background: none;
     cursor: pointer;
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
+    color: var(--color-brand-90);
+    text-decoration: underline;
+    text-underline-offset: 2px;
 }
 
-.csv-row input[type="file"] {
-    font-size: 14px;
-    color: var(--text-secondary);
+.cc-btn-text:hover {
+    color: var(--color-brand-80);
 }
 
-.csv-row input[type="file"]::file-selector-button {
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    padding: 8px 14px;
-    border-radius: 8px;
+.cc-gist-note {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    margin-top: var(--space-2);
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
+}
+
+/* Advanced import, collapsed behind a disclosure triangle */
+.cc-disclosure {
+    margin-top: var(--space-10);
+    border-top: 1px solid var(--color-neutral-20);
+    border-bottom: 1px solid var(--color-neutral-20);
+}
+
+.cc-disclosure > summary {
+    padding: var(--space-4) 0;
     cursor: pointer;
-    font-size: 13px;
-    margin-right: 12px;
-    transition: background 0.2s, border-color 0.2s;
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-md);
+    color: var(--color-neutral-100);
 }
 
-.csv-row input[type="file"]::file-selector-button:hover {
-    background: var(--border-color);
-    border-color: var(--accent-secondary);
+.cc-disclosure > summary:hover {
+    color: var(--color-brand-80);
 }
 
-.csv-row input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--accent-secondary);
-    cursor: pointer;
+.cc-disclosure__body {
+    padding-bottom: var(--space-6);
 }
 
-.csv-row select {
-    padding: 8px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 14px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    cursor: pointer;
-}
-
-.csv-row select:focus {
-    outline: none;
-    border-color: var(--accent-secondary);
+.cc-csv-options {
+    align-items: center;
+    gap: var(--space-6);
 }
 
 .column-select {
@@ -208,387 +291,66 @@ h1 {
 }
 
 .column-select.visible {
-    display: flex;
+    display: inline-flex;
 }
 
-.csv-status {
-    margin-top: 12px;
-    font-size: 13px;
-    color: var(--text-muted);
+.column-select .pt-select {
+    width: auto;
 }
 
-.csv-status.success {
-    color: var(--accent-share);
+.cc-file {
+    font-family: var(--font-display);
+    font-size: var(--font-size-sm);
 }
 
-.csv-status.error {
-    color: var(--accent-primary);
-}
-
-/* Student list with curved shadow effect */
-.student-list {
-    background: var(--bg-card);
-    border-radius: 12px;
-    box-shadow:
-        0 8px 32px var(--shadow),
-        /* Curved planetary shadow across the card */
-        inset 0 60px 60px -60px var(--umbra),
-        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-    position: relative;
-    z-index: 1;
-}
-
-/* Ring-like gradient at top of list */
-.student-list::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        var(--ring-gold) 20%,
-        var(--accent-secondary) 50%,
-        var(--ring-gold) 80%,
-        transparent 100%);
-    opacity: 0.6;
-}
-
-.student-row {
-    display: flex;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border-color);
-    transition: background 0.2s, box-shadow 0.2s;
-    position: relative;
-}
-
-.student-row:last-child {
-    border-bottom: none;
-}
-
-.student-row:hover {
-    background: rgba(212, 165, 116, 0.03);
-    box-shadow: inset 4px 0 0 var(--accent-secondary);
-}
-
-.student-name {
-    flex: 1;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
-}
-
-.student-id {
-    color: var(--text-muted);
-    font-size: 12px;
-    margin-left: 10px;
-    font-weight: normal;
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-}
-
-/* Buttons with subtle glow */
-.btn {
-    padding: 10px 18px;
-    border: none;
-    border-radius: 8px;
+.cc-file::file-selector-button {
+    margin-right: var(--space-3);
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--color-neutral-100);
+    background: transparent;
+    color: var(--color-neutral-100);
+    font-family: var(--font-display);
+    font-weight: var(--font-weight-medium);
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-    margin-left: 10px;
-    transition: transform 0.15s, box-shadow 0.2s;
-    display: inline-block;
-    position: relative;
 }
 
-.btn:hover {
-    transform: translateY(-2px);
+.cc-file::file-selector-button:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-white);
 }
 
-.btn:active {
-    transform: translateY(0);
+.cc-link-panel {
+    padding: var(--space-6);
+    background: var(--color-brand-10);
+    border-top: 4px solid var(--color-brand-70);
 }
 
-.btn-share {
-    background: linear-gradient(135deg, #b8860b 0%, #d4a574 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
-}
-
-.btn-share:hover {
-    background: linear-gradient(135deg, #9a7209 0%, #b8860b 100%);
-    box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
-}
-
-.btn-view {
-    background: linear-gradient(135deg, #5a7a9a 0%, #b8c5d6 100%);
-    color: #0d0d1a;
-    box-shadow: 0 4px 15px rgba(184, 197, 214, 0.3);
-}
-
-.btn-view:hover {
-    background: linear-gradient(135deg, #4a6a8a 0%, #a8b5c6 100%);
-    box-shadow: 0 6px 20px rgba(184, 197, 214, 0.4);
-}
-
-/* Instructions panel with warm accent */
-.instructions {
-    margin-top: 30px;
-    padding: 20px 24px;
-    background: rgba(212, 165, 116, 0.08);
-    border-radius: 12px;
-    border-left: 4px solid var(--accent-secondary);
-    box-shadow: 0 4px 20px var(--shadow);
-    position: relative;
-    z-index: 1;
-}
-
-.instructions h3 {
-    margin: 0 0 12px 0;
-    color: var(--accent-secondary);
-    font-size: 1rem;
-}
-
-.instructions ul {
-    margin: 0;
-    padding-left: 20px;
-    color: var(--text-secondary);
-    line-height: 1.7;
-}
-
-.instructions li {
-    margin-bottom: 8px;
-}
-
-.instructions strong {
-    color: var(--text-primary);
-}
-
-.instructions em {
-    font-style: normal;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.9em;
-}
-
-/* Responsive design */
-@media (max-width: 600px) {
-    body {
-        padding: 20px 15px;
-    }
-
-    body::before {
-        height: 150px;
-    }
-
-    h1 {
-        font-size: 1.6rem;
-        letter-spacing: 1px;
-    }
-
-    .student-row {
-        flex-wrap: wrap;
-        padding: 14px 16px;
-    }
-
-    .student-name {
-        width: 100%;
-        margin-bottom: 12px;
-    }
-
-    .btn {
-        margin-left: 0;
-        margin-right: 10px;
-        padding: 10px 16px;
-    }
-
-    .csv-row {
-        gap: 12px;
-    }
-}
-
-/* Class link box */
-.class-link-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.class-link-row input[type="text"] {
-    flex: 1;
-    min-width: 0;
-    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-    font-size: 12px;
-}
-
-.btn-copy {
-    margin-left: 0;
-    background: linear-gradient(135deg, #b8860b 0%, #d4a574 100%);
-    color: white;
-    white-space: nowrap;
-}
-
-/* Error banner for damaged class links */
-.banner {
-    padding: 14px 18px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    position: relative;
-    z-index: 1;
-}
-
-.banner.error {
-    background: rgba(233, 69, 96, 0.12);
-    border: 1px solid var(--accent-primary);
-    color: var(--text-primary);
-}
-
-[hidden] {
-    display: none !important;
-}
-
-/* Gist roster source */
-.gist-source {
-    margin-top: 16px;
-}
-
-.gist-source label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-.gist-source input[type="text"] {
-    padding: 10px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.loading {
-    padding: 16px 20px;
-    color: var(--text-muted);
-}
-
-/* Create page */
-.subtitle {
+.cc-link-panel h2 {
     margin-top: 0;
 }
 
-.class-link-row .btn-view {
-    margin-left: 0;
-    white-space: nowrap;
+/* ---------- Footer ---------- */
+
+/* The kit's grayscale filter leaves the shield's dark lettering unreadable
+   on the dark footer; reverse it to white, as the kit does for the header
+   wordmark. */
+.pt-subfooter__shield img,
+.pt-subfooter__shield:hover img {
+    filter: brightness(0) invert(1);
 }
 
-/* Class page */
-.page-footer {
-    margin-top: 24px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    position: relative;
-    z-index: 1;
+.cc-footer-grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
 }
 
-.page-footer a {
-    color: var(--accent-secondary);
+@media (min-width: 48rem) {
+    .cc-footer-grid {
+        grid-template-columns: 2fr 1fr;
+    }
 }
 
-/* Inline roster editor */
-.roster-editor h3 {
-    margin: 0 0 6px 0;
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.roster-list {
-    margin: 12px 0;
-    padding-left: 36px;
-    max-height: 420px;
-    overflow-y: auto;
-    color: var(--text-muted);
-}
-
-.roster-list li {
-    margin-bottom: 6px;
-}
-
-.roster-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.config .roster-row input[type="text"] {
-    flex: 1;
-    min-width: 0;
-    padding: 8px 10px;
-}
-
-.config .roster-row input[readonly] {
-    color: var(--text-secondary);
-    border-style: dashed;
-}
-
-.btn-remove {
-    margin-left: 0;
-    padding: 6px 10px;
-    background: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    font-size: 16px;
-    line-height: 1;
-}
-
-.btn-remove:hover {
-    color: var(--accent-primary);
-    border-color: var(--accent-primary);
-}
-
-.roster-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.btn-small {
-    margin-left: 0;
-    padding: 8px 14px;
-    font-size: 13px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-}
-
-.btn-quiet {
-    color: var(--text-secondary);
-}
-
-.gist-note {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    font-size: 13px;
-    color: var(--text-secondary);
-}
-
-/* Advanced import, collapsed behind a disclosure triangle */
-.csv-import.advanced > summary {
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-weight: 500;
-    font-size: 0.95rem;
-}
-
-.csv-import.advanced[open] > summary {
-    margin-bottom: 14px;
+.cc-footer-grid p {
+    margin: 0;
 }

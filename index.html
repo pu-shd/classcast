@@ -6,28 +6,92 @@
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex">
     <title>ClassCast - Classroom Screen Share</title>
+    <link rel="icon" href="vendor/paper-tiger/logos/favicon.ico">
+    <!-- Paper Tiger kit (vendor/paper-tiger), then ClassCast styles -->
+    <link rel="stylesheet" href="vendor/paper-tiger/tokens.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/fonts.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/layout.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/header.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/footer.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/buttons.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/forms.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1 id="pageTitle">ClassCast</h1>
+    <header class="pt-header">
+        <a href="#main" class="pt-skiplink">Skip to content</a>
+        <div class="pt-princeton-bar">
+            <div class="pt-container">
+                <a href="https://www.princeton.edu" class="pt-pu-logo" title="Princeton University">
+                    <img src="vendor/paper-tiger/logos/pu-logo.svg" alt="Princeton University">
+                </a>
+            </div>
+        </div>
+        <div class="pt-site-branding">
+            <div class="pt-container pt-site-branding__row">
+                <div class="pt-site-info">
+                    <p class="pt-site-name">ClassCast</p>
+                    <p class="pt-site-slogan">Share your screen with the class</p>
+                </div>
+            </div>
+        </div>
+    </header>
 
-    <div class="banner error" id="linkError" role="alert" hidden></div>
+    <main id="main">
+        <div class="pt-page-title">
+            <div class="pt-container">
+                <h1 id="pageTitle">Classroom Screen Share</h1>
+            </div>
+        </div>
 
-    <div class="student-list" id="studentList"></div>
+        <div class="pt-container pt-block--medium">
+            <div class="cc-narrow">
+                <div class="cc-alert" id="linkError" role="alert" hidden></div>
 
-    <div class="instructions">
-        <h3>Instructions</h3>
-        <ul>
-            <li><strong>Students:</strong> Click the <em>Share</em> button next to your name, then select your screen to share</li>
-            <li><strong>Presenter:</strong> Click the <em>View</em> button to display a student's screen on the projector</li>
-            <li>Audio is disabled - use your voice in the room</li>
-            <li>Only screen sharing is enabled (no webcam)</li>
-        </ul>
-    </div>
+                <section id="studentsSection" aria-labelledby="studentsHeading">
+                    <h2 id="studentsHeading">Students</h2>
+                    <div class="pt-list pt-list--compact cc-roster" id="studentList"></div>
+                </section>
 
-    <p class="page-footer" id="createLink" hidden>
-        Teachers: <a href="create.html">create a class link</a> with your roster, title or room password.
-    </p>
+                <section class="cc-section" aria-labelledby="howHeading">
+                    <h2 id="howHeading">How it works</h2>
+                    <ul class="cc-steps">
+                        <li><strong>Students:</strong> click <em>Share</em> next to your name, then choose the screen or window to share.</li>
+                        <li><strong>Presenter:</strong> click <em>View</em> next to a student to show their screen on the projector.</li>
+                        <li>Sound is off; talk in the room. Only screens are shared, never webcams.</li>
+                    </ul>
+                </section>
+
+                <p class="cc-create-note" id="createLink" hidden>
+                    Teachers: <a href="create.html">create a class link</a> with your roster, title or room password.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="pt-footer">
+        <div class="pt-container">
+            <div class="cc-footer-grid">
+                <section>
+                    <strong>ClassCast</strong>
+                    <p>Classroom screen sharing, powered by <a href="https://vdo.ninja">VDO.ninja</a>.</p>
+                </section>
+                <section>
+                    <p><a href="https://github.com/pu-shd/classcast">Source code</a></p>
+                </section>
+            </div>
+            <div class="pt-subfooter">
+                <ul class="pt-subfooter__links" role="list">
+                    <li><a href="https://inclusive.princeton.edu/about/our-commitment-equal-opportunity-and-non-discrimination">Diversity &amp; Non-Discrimination</a></li>
+                    <li><a href="https://accessibility.princeton.edu/help">Accessibility Help</a></li>
+                </ul>
+                <p class="pt-subfooter__copy">© <span class="pt-year">2026</span> The Trustees of Princeton University</p>
+                <a href="https://www.princeton.edu" class="pt-subfooter__shield" title="Princeton University">
+                    <img src="vendor/paper-tiger/logos/pu-logo-stacked.svg" alt="Princeton University" loading="lazy">
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <script type="module" src="class-page.js"></script>
 </body>
