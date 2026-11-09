@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { csv, rowNames, shareHrefs, previewNames, freshPage, openImport } from "./helpers.js";
+import { csv, rowNames, shareHrefs, previewNames, freshPage, openImport, blockWebFonts } from "./helpers.js";
 
 test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => { throw err; });
+    await blockWebFonts(page.context());
 });
 
 /** @param {import("@playwright/test").Page} page */
@@ -113,7 +114,9 @@ test("hostile names in an imported CSV stay as text", async ({ page }) => {
     await page.setInputFiles("#csvFile", csv("evil.csv", `Name\n"${evil.replace(/"/g, '""')}"\nBob\n`));
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 2/);
     expect(await previewNames(page)).toEqual([evil, "Bob"]);
-    await expect(page.locator("img")).toHaveCount(0);
+    // Only the two Princeton logos may be images.
+    await expect(page.locator("main img")).toHaveCount(0);
+    await expect(page.locator("img")).toHaveCount(2);
     expect(await page.evaluate(() => /** @type {any} */ (window).pwned)).toBeUndefined();
 });
 

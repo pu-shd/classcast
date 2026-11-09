@@ -165,24 +165,26 @@ export function renderStudentRows(container, students, links) {
         a.href = href;
         a.target = "_blank";
         a.rel = "noopener";
-        a.className = `btn ${className}`;
+        a.className = `pt-btn ${className}`;
         a.textContent = label;
         return a;
     };
     const rows = students.map((student) => {
         const row = doc.createElement("div");
-        row.className = "student-row";
+        row.className = "student-row pt-list__item";
         const name = doc.createElement("span");
         name.className = "student-name";
         const id = doc.createElement("span");
         id.className = "student-id";
         id.textContent = `#${student.id}`;
         name.append(student.name, id);
-        row.append(
-            name,
-            link(links.share(student.id), "btn-share", "Share"),
-            link(links.view(student.id), "btn-view", "View"),
+        const actions = doc.createElement("span");
+        actions.className = "student-actions";
+        actions.append(
+            link(links.share(student.id), "pt-btn--primary btn-share", "Share"),
+            link(links.view(student.id), "pt-btn--outline btn-view", "View"),
         );
+        row.append(name, actions);
         return row;
     });
     container.replaceChildren(...rows);

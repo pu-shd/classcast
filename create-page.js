@@ -29,7 +29,7 @@ let linkWriteSeq = 0;
 function setStatus(id, text, kind) {
     const el = $(id);
     el.textContent = text;
-    el.className = "csv-status" + (kind ? " " + kind : "");
+    el.className = "pt-field__hint cc-status" + (kind ? ` cc-status--${kind}` : "");
 }
 
 const defaultNames = () => defaultStudents().map((s) => s.name);
@@ -55,6 +55,7 @@ function makeRow(name, readonly) {
     row.className = "roster-row";
     const input = document.createElement("input");
     input.type = "text";
+    input.className = "pt-input";
     input.value = name;
     input.maxLength = LIMITS.maxNameLength;
     input.spellcheck = false;
@@ -63,7 +64,7 @@ function makeRow(name, readonly) {
     if (!readonly) {
         const remove = document.createElement("button");
         remove.type = "button";
-        remove.className = "btn btn-remove";
+        remove.className = "pt-btn pt-btn--outline cc-btn-remove btn-remove";
         remove.textContent = "×";
         row.append(remove);
     }
@@ -370,5 +371,6 @@ $("addStudent").addEventListener("click", () => insertRow(-1));
 $("resetRoster").addEventListener("click", resetRoster);
 $("detachGist").addEventListener("click", detachGist);
 window.addEventListener("hashchange", () => location.reload());
+for (const el of document.querySelectorAll(".pt-year")) el.textContent = String(new Date().getFullYear());
 
 init();

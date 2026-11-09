@@ -5,19 +5,20 @@ import {
     newSessionId, decodeConfig, parseHash, buildHash, loadRosterNames,
 } from "./classcast.js";
 
-const DEFAULT_TITLE = "ClassCast";
+const SITE_NAME = "ClassCast";
+const DEFAULT_HEADING = "Classroom Screen Share";
 const $ = (id) => document.getElementById(id);
 
 function showLoading(text) {
     const div = document.createElement("div");
-    div.className = "loading";
+    div.className = "cc-loading";
     div.textContent = text;
     $("studentList").replaceChildren(div);
 }
 
 function showTitle(title) {
-    $("pageTitle").textContent = title || DEFAULT_TITLE;
-    document.title = title ? `${title} - ${DEFAULT_TITLE}` : `${DEFAULT_TITLE} - Classroom Screen Share`;
+    $("pageTitle").textContent = title || DEFAULT_HEADING;
+    document.title = title ? `${title} - ${SITE_NAME}` : `${SITE_NAME} - ${DEFAULT_HEADING}`;
 }
 
 // On any failure show the error and no roster: falling back to the default
@@ -38,7 +39,7 @@ async function init() {
     } catch (err) {
         $("linkError").textContent = `${err.message}. Ask your teacher to check the class link.`;
         $("linkError").hidden = false;
-        $("studentList").replaceChildren();
+        $("studentsSection").hidden = true;
         return;
     }
 
@@ -56,6 +57,8 @@ async function init() {
         $("createLink").hidden = false;
     }
 }
+
+for (const el of document.querySelectorAll(".pt-year")) el.textContent = String(new Date().getFullYear());
 
 // Pasting a different class link into this tab: start over from it.
 window.addEventListener("hashchange", () => location.reload());

@@ -25,9 +25,14 @@ export async function openImport(page) {
     }
 }
 
+/** Keep tests offline from Google Fonts (the kit's fonts.css imports it). @param {import("@playwright/test").BrowserContext} context */
+export const blockWebFonts = (context) => context.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort());
+
 /** A fresh browser (no shared storage) that fails the test on page errors. @param {import("@playwright/test").Browser} browser */
 export async function freshPage(browser) {
-    const page = await (await browser.newContext()).newPage();
+    const context = await browser.newContext();
+    await blockWebFonts(context);
+    const page = await context.newPage();
     page.on("pageerror", (err) => { throw err; });
     return page;
 }

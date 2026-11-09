@@ -6,77 +6,162 @@
     <meta name="referrer" content="no-referrer">
     <meta name="robots" content="noindex">
     <title>Create a Class Link - ClassCast</title>
+    <link rel="icon" href="vendor/paper-tiger/logos/favicon.ico">
+    <!-- Paper Tiger kit (vendor/paper-tiger), then ClassCast styles -->
+    <link rel="stylesheet" href="vendor/paper-tiger/tokens.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/fonts.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/layout.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/header.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/footer.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/buttons.css">
+    <link rel="stylesheet" href="vendor/paper-tiger/forms.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Create a Class Link</h1>
-    <p class="subtitle">Students and the presenter open the class link; this page isn't shown to them.</p>
-
-    <div class="config">
-        <label for="existingLink">Edit an existing class link (optional):</label>
-        <div class="class-link-row">
-            <input type="text" id="existingLink" placeholder="Paste a class link to change its roster or settings" spellcheck="false">
-            <button type="button" class="btn btn-copy" id="loadExisting">Edit</button>
-        </div>
-        <div class="csv-status" id="existingStatus">Editing keeps the same session, so students' Share links don't change.</div>
-    </div>
-
-    <div class="config">
-        <label for="classTitle">Class title (shown at the top of the class page):</label>
-        <input type="text" id="classTitle" value="" placeholder="e.g. ORF 309 Screen Share" maxlength="80">
-        <label for="baseUrl" style="margin-top: 12px;">VDO.ninja Base URL:</label>
-        <input type="text" id="baseUrl" value="https://vdo.ninja" placeholder="https://vdo.ninja or your self-hosted URL" spellcheck="false">
-        <label for="roomPassword" style="margin-top: 12px;">Room Password (optional, share with class):</label>
-        <input type="text" id="roomPassword" value="" placeholder="Leave empty for no password" spellcheck="false">
-        <div class="csv-status" id="configStatus"></div>
-    </div>
-
-    <div class="config roster-editor">
-        <h3 id="rosterHeading">Students</h3>
-        <div class="csv-status" id="rosterHint"></div>
-        <div class="gist-note" id="gistNote" hidden>
-            <span>These names come from your gist. Edit the gist to change them, or:</span>
-            <button type="button" class="btn btn-small" id="detachGist">Edit names here instead</button>
-        </div>
-        <ol class="roster-list" id="rosterList"></ol>
-        <div class="roster-actions">
-            <button type="button" class="btn btn-small" id="addStudent">Add student</button>
-            <button type="button" class="btn btn-small btn-quiet" id="resetRoster">Reset to Student 001–020</button>
-        </div>
-    </div>
-
-    <details class="csv-import advanced" id="importSection">
-        <summary>Import student list from CSV or a secret gist</summary>
-        <div class="csv-row">
-            <input type="file" id="csvFile" accept=".csv,.txt">
-            <label>
-                <input type="checkbox" id="hasHeader" checked>
-                First row is header
-            </label>
-            <label class="column-select" id="columnSelectLabel">
-                Name column:
-                <select id="columnSelect"></select>
-            </label>
-        </div>
-        <div class="gist-source">
-            <label for="gistUrl">Or load the CSV from a secret gist (edit the gist later and the class link stays the same):</label>
-            <div class="class-link-row">
-                <input type="text" id="gistUrl" placeholder="https://gist.github.com/you/1a2b3c4d…" spellcheck="false">
-                <button type="button" class="btn btn-copy" id="loadGist">Load</button>
+    <header class="pt-header">
+        <a href="#main" class="pt-skiplink">Skip to content</a>
+        <div class="pt-princeton-bar">
+            <div class="pt-container">
+                <a href="https://www.princeton.edu" class="pt-pu-logo" title="Princeton University">
+                    <img src="vendor/paper-tiger/logos/pu-logo.svg" alt="Princeton University">
+                </a>
             </div>
         </div>
-        <div class="csv-status" id="csvStatus"></div>
-    </details>
-
-    <div class="config class-link">
-        <label for="classLink">Class link: post this for students and open it on the presenter's computer</label>
-        <div class="class-link-row">
-            <input type="text" id="classLink" readonly>
-            <button type="button" class="btn btn-copy" id="copyLink">Copy</button>
-            <a class="btn btn-view" id="openLink" href="./" target="_blank" rel="noopener">Open</a>
+        <div class="pt-site-branding">
+            <div class="pt-container pt-site-branding__row">
+                <div class="pt-site-info">
+                    <p class="pt-site-name">ClassCast</p>
+                    <p class="pt-site-slogan">Share your screen with the class</p>
+                </div>
+            </div>
         </div>
-        <div class="csv-status" id="linkStatus"></div>
-    </div>
+    </header>
+
+    <main id="main">
+        <div class="pt-page-title">
+            <div class="pt-container">
+                <h1>Create a Class Link</h1>
+            </div>
+        </div>
+
+        <div class="pt-container pt-block--medium">
+            <div class="cc-narrow">
+                <p class="cc-lede">Students and the presenter open the class link you make here. They see only the roster, not this page.</p>
+
+                <div class="pt-outline-light cc-existing">
+                    <div class="pt-field">
+                        <label class="pt-field__label" for="existingLink">Edit an existing class link (optional)</label>
+                        <div class="cc-input-row">
+                            <input class="pt-input" type="text" id="existingLink" placeholder="Paste a class link to change its roster or settings" spellcheck="false">
+                            <button type="button" class="pt-btn pt-btn--secondary" id="loadExisting">Edit</button>
+                        </div>
+                        <p class="pt-field__hint cc-status" id="existingStatus">Editing keeps the same session, so students' Share links don't change.</p>
+                    </div>
+                </div>
+
+                <section class="cc-section" aria-labelledby="detailsHeading">
+                    <h2 id="detailsHeading">Class details</h2>
+                    <div class="pt-form">
+                        <div class="pt-field">
+                            <label class="pt-field__label" for="classTitle">Class title</label>
+                            <input class="pt-input" type="text" id="classTitle" value="" placeholder="e.g. ORF 309 Screen Share" maxlength="80">
+                            <p class="pt-field__hint">Shown at the top of the class page.</p>
+                        </div>
+                        <div class="pt-field">
+                            <label class="pt-field__label" for="roomPassword">Room password (optional)</label>
+                            <input class="pt-input" type="text" id="roomPassword" value="" placeholder="Leave empty for no password" spellcheck="false">
+                            <p class="pt-field__hint">Saved in the class link, so anyone with the link can use it.</p>
+                        </div>
+                        <div class="pt-field">
+                            <label class="pt-field__label" for="baseUrl">VDO.ninja address</label>
+                            <input class="pt-input" type="text" id="baseUrl" value="https://vdo.ninja" placeholder="https://vdo.ninja or your self-hosted copy" spellcheck="false">
+                            <p class="pt-field__hint cc-status" id="configStatus"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cc-section roster-editor" aria-labelledby="rosterHeading">
+                    <h2 id="rosterHeading">Students</h2>
+                    <p class="pt-field__hint cc-status" id="rosterHint"></p>
+                    <div class="cc-gist-note" id="gistNote" hidden>
+                        <span>These names come from your gist. Edit the gist to change them, or:</span>
+                        <button type="button" class="pt-btn pt-btn--outline cc-btn-small" id="detachGist">Edit names here instead</button>
+                    </div>
+                    <ol class="cc-roster-list" id="rosterList"></ol>
+                    <div class="pt-cluster">
+                        <button type="button" class="pt-btn pt-btn--outline" id="addStudent">Add student</button>
+                        <button type="button" class="cc-btn-text" id="resetRoster">Reset to Student 001–020</button>
+                    </div>
+                </section>
+
+                <details class="cc-disclosure" id="importSection">
+                    <summary>Import student list from CSV or a secret gist</summary>
+                    <div class="cc-disclosure__body pt-form">
+                        <div class="pt-field">
+                            <label class="pt-field__label" for="csvFile">CSV file</label>
+                            <input class="cc-file" type="file" id="csvFile" accept=".csv,.txt">
+                        </div>
+                        <div class="pt-cluster cc-csv-options">
+                            <label class="pt-check">
+                                <input type="checkbox" id="hasHeader" checked>
+                                First row is a header
+                            </label>
+                            <label class="pt-check column-select" id="columnSelectLabel">
+                                Name column
+                                <select class="pt-select" id="columnSelect"></select>
+                            </label>
+                        </div>
+                        <div class="pt-field">
+                            <label class="pt-field__label" for="gistUrl">Or a secret gist</label>
+                            <div class="cc-input-row">
+                                <input class="pt-input" type="text" id="gistUrl" placeholder="https://gist.github.com/you/1a2b3c4d…" spellcheck="false">
+                                <button type="button" class="pt-btn pt-btn--secondary" id="loadGist">Load</button>
+                            </div>
+                            <p class="pt-field__hint">Edit the gist later and the class link stays the same.</p>
+                        </div>
+                        <p class="pt-field__hint cc-status" id="csvStatus"></p>
+                    </div>
+                </details>
+
+                <section class="cc-section cc-link-panel" aria-labelledby="linkHeading">
+                    <h2 id="linkHeading">Class link</h2>
+                    <div class="pt-field">
+                        <label class="pt-field__label" for="classLink">Post this for students and open it on the presenter's computer</label>
+                        <div class="cc-input-row">
+                            <input class="pt-input cc-mono" type="text" id="classLink" readonly>
+                            <button type="button" class="pt-btn pt-btn--primary" id="copyLink">Copy</button>
+                            <a class="pt-btn pt-btn--outline" id="openLink" href="./" target="_blank" rel="noopener">Open</a>
+                        </div>
+                        <p class="pt-field__hint cc-status" id="linkStatus"></p>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="pt-footer">
+        <div class="pt-container">
+            <div class="cc-footer-grid">
+                <section>
+                    <strong>ClassCast</strong>
+                    <p>Classroom screen sharing, powered by <a href="https://vdo.ninja">VDO.ninja</a>.</p>
+                </section>
+                <section>
+                    <p><a href="https://github.com/pu-shd/classcast">Source code</a></p>
+                </section>
+            </div>
+            <div class="pt-subfooter">
+                <ul class="pt-subfooter__links" role="list">
+                    <li><a href="https://inclusive.princeton.edu/about/our-commitment-equal-opportunity-and-non-discrimination">Diversity &amp; Non-Discrimination</a></li>
+                    <li><a href="https://accessibility.princeton.edu/help">Accessibility Help</a></li>
+                </ul>
+                <p class="pt-subfooter__copy">© <span class="pt-year">2026</span> The Trustees of Princeton University</p>
+                <a href="https://www.princeton.edu" class="pt-subfooter__shield" title="Princeton University">
+                    <img src="vendor/paper-tiger/logos/pu-logo-stacked.svg" alt="Princeton University" loading="lazy">
+                </a>
+            </div>
+        </div>
+    </footer>
 
     <script type="module" src="create-page.js"></script>
 </body>

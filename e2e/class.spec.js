@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
-import { jdata, rowNames, shareHrefs } from "./helpers.js";
+import { jdata, rowNames, shareHrefs, blockWebFonts } from "./helpers.js";
 
 test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => { throw err; });
+    await blockWebFonts(page.context());
 });
 
 test("with no class link: numbered seats, a shareable session and a create link", async ({ page }) => {
@@ -12,7 +13,7 @@ test("with no class link: numbered seats, a shareable session and a create link"
     expect([seats[0], seats[19]]).toEqual(["Student 001", "Student 020"]);
     await expect(page).toHaveURL(/#session=[a-z0-9]{10}$/);
     expect((await shareHrefs(page))[19]).toMatch(/\?push=uc_[a-z0-9]+_student_020&/);
-    await expect(page.locator("h1")).toHaveText("ClassCast");
+    await expect(page.locator("h1")).toHaveText("Classroom Screen Share");
     await expect(page.locator("h1")).toHaveCSS("text-transform", "none");
     await expect(page).toHaveTitle("ClassCast - Classroom Screen Share");
     await expect(page.locator("#createLink a")).toHaveAttribute("href", "create.html");
@@ -36,6 +37,7 @@ test("a damaged link shows an error instead of a roster", async ({ page }) => {
     await expect(page.locator("#linkError")).toBeVisible();
     await expect(page.locator("#linkError")).toHaveText(/damaged.*check the class link/);
     await expect(page.locator(".student-row")).toHaveCount(0);
+    await expect(page.locator("#studentsSection")).toBeHidden();
     await expect(page.locator("#createLink")).toBeHidden();
 });
 
@@ -51,7 +53,9 @@ test("hostile names and titles in a link render as text", async ({ page }) => {
     await expect(page.locator(".student-row")).toHaveCount(2);
     expect(await rowNames(page)).toEqual([evil, "Bob"]);
     await expect(page.locator("h1")).toHaveText(evil);
-    await expect(page.locator("img")).toHaveCount(0);
+    // Only the two Princeton logos may be images.
+    await expect(page.locator("main img")).toHaveCount(0);
+    await expect(page.locator("img")).toHaveCount(2);
     expect(await page.evaluate(() => /** @type {any} */ (window).pwned)).toBeUndefined();
 });
 
