@@ -5,7 +5,9 @@
 !tsconfig.json
 !playwright.config.js
 !index.html
-!app.js
+!create.html
+!class-page.js
+!create-page.js
 !classcast.js
 !styles.css
 !test/

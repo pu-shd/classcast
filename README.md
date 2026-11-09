@@ -30,14 +30,15 @@ The page is hosted at https://pu-shd.github.io/classcast/ (or open `index.html` 
 
 **With your roster:**
 
-
-1. Open the page and load your roster under **Class setup**, either way:
+1. Open the create page, https://pu-shd.github.io/classcast/create.html (also linked at the bottom of the class page), and load your roster, either way:
    - **CSV file:** the roster is stored in the class link itself.
    - **Secret gist:** paste the gist's link. The class link points at the gist, so you can edit the roster later and the link stays the same.
 2. (Optional) Set a class title (e.g. "ORF 309 Screen Share"; the default heading is ClassCast), a room password and a self-hosted VDO.ninja base URL. All are saved in the link.
-3. Click **Copy** next to **Class link** and post it for students (Canvas, email, etc.).
+3. Check the roster preview, then click **Copy** next to **Class link** and post it for students (Canvas, email, etc.). **Open** shows the class page as students will see it.
 4. Students open the link and click **Share** next to their name.
 5. The presenter opens the same link on the projector computer and clicks **View**.
+
+The class link opens only the roster with Share and View buttons; none of the setup tools appear. To change a class later, paste its class link into **Edit an existing class link** on the create page. Editing keeps the link's session, so students' Share links stay the same, but the class link itself changes (unless the roster comes from a gist and only the gist changed), so post the new one.
 
 ### Option 2: Generate Static Files with CLI
 
@@ -151,20 +152,15 @@ A link that has been cut off or edited shows an error instead of a roster. Links
 ### Gist Rosters
 
 1. Create a **secret** gist at https://gist.github.com containing your roster CSV. Secret gists are unlisted (not searchable), but anyone with the gist's URL can read them.
-2. Paste the gist's URL into **Class setup** and click **Load**, then choose the header and name-column options.
+2. Paste the gist's URL into the create page and click **Load**, then choose the header and name-column options.
 3. Copy the class link. To change the roster later, edit the gist. GitHub can take up to 5 minutes to serve the new version.
 
 The page loads the gist each time it opens, so if the gist is deleted, the link shows an error.
 
-## Web Interface Features
+## Web Interface
 
-The interactive `index.html` page includes:
-
-- **Base URL configuration** - Change VDO.ninja server on the fly
-- **CSV import** - File picker, or load from a secret gist
-- **Class link** - One link holds the roster and settings; copy it for students and the presenter
-- **Header toggle** - For CSVs with/without headers
-- **Column selector** - Auto-detects "name" columns
+- **Class page** (`index.html`) - What students and the presenter see: the title, the roster with Share and View buttons, and instructions. With no class link it lists Student 001 to Student 020.
+- **Create page** (`create.html`) - For teachers: title, VDO.ninja base URL, room password, roster from a CSV file or secret gist (header toggle, name-column selector that auto-detects "name" columns), a roster preview, and the class link with **Copy** and **Open**. It can also load an existing class link for editing.
 
 ## Self-Hosting VDO.ninja
 
@@ -185,7 +181,7 @@ VDO.ninja is purely client-side and uses public TURN/STUN servers by default, so
 
 ## Development
 
-The page is static: `index.html`, `app.js` (page wiring), `classcast.js` (roster and link logic) and `styles.css`.
+The site is static: `index.html` + `class-page.js` (class page), `create.html` + `create-page.js` (create page), `classcast.js` (shared roster and link logic) and `styles.css`.
 
 ```bash
 # Lint, type check and unit tests

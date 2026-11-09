@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
-const ALLOWED = new Set(["/index.html", "/app.js", "/classcast.js", "/styles.css"]);
+const ALLOWED = new Set(["/index.html", "/create.html", "/class-page.js", "/create-page.js", "/classcast.js", "/styles.css"]);
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const port = Number(process.env.PORT ?? "4173");
 

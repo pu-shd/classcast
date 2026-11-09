@@ -1,20 +1,17 @@
-// ClassCast page wiring: setup panel, class link, roster rendering.
+// ClassCast create page: builds the class link from a title, settings and
+// a roster (CSV file or secret gist). The class page itself is index.html.
 import {
-    DEFAULT_BASE_URL, LIMITS, assignIds, parseCSV, detectNameColumn, rosterNamesFromCSV,
-    shareUrl, viewUrl, renderStudentRows, renderColumnOptions, cleanText,
-    normalizeBaseUrl, newSessionId, encodeConfig, decodeConfig, parseHash, buildHash,
-    parseGistRef, gistPageUrl, fetchGistText, defaultStudents,
+    DEFAULT_BASE_URL, LIMITS, parseCSV, detectNameColumn, rosterNamesFromCSV,
+    renderColumnOptions, cleanText, normalizeBaseUrl, newSessionId, encodeConfig, decodeConfig,
+    parseHash, buildHash, parseGistRef, gistPageUrl, fetchGistText, loadRosterNames,
+    classLinkUrl, parseClassLink,
 } from "./classcast.js";
 
 const $ = (id) => document.getElementById(id);
 
-// Numbered seats shown until the teacher loads a roster; not written into the link.
-const DEFAULT_STUDENTS = defaultStudents();
-
 const LINK_NOTE_NAMES = "The roster lives in the link itself and is never uploaded. Anyone with the link can see the names and room password.";
-const LINK_NOTE_GIST = "The roster is read from your gist each time the page opens; GitHub can take up to 5 minutes to show edits. Anyone with the link can see the names and room password.";
-
-const DEFAULT_TITLE = "ClassCast";
+const LINK_NOTE_GIST = "The class page reads your gist each time it opens; GitHub can take up to 5 minutes to show edits. Anyone with the link can see the names and room password.";
+const LINK_NOTE_SEATS = "No roster: the class page lists Student 001–020. Anyone with the link can see the room password.";
 
 const state = {
     session: "",
@@ -24,16 +21,10 @@ const state = {
     names: null, // roster carried in the link, or null
     gist: null, // { user, id, file?, hasHeader, column } when the roster comes from a gist
 };
-let students = DEFAULT_STUDENTS;
+let previewNames = null; // what the class page will list, when known
 let csvText = null; // CSV being imported, from a file or a gist
 let csvGistRef = null; // set when csvText came from a gist
-let hashWriteSeq = 0;
-
-const roomPrefix = () => `uc_${state.session}_`;
-const links = {
-    share: (id) => shareUrl(state.baseUrl, roomPrefix() + id, state.password),
-    view: (id) => viewUrl(state.baseUrl, roomPrefix() + id, state.password),
-};
+let linkWriteSeq = 0;
 
 function setStatus(id, text, kind) {
     const el = $(id);
@@ -41,31 +32,28 @@ function setStatus(id, text, kind) {
     el.className = "csv-status" + (kind ? " " + kind : "");
 }
 
-function showLinkError(message) {
-    const el = $("linkError");
-    el.textContent = `${message}. Ask your teacher to check the class link.`;
-    el.hidden = false;
+function renderPreview() {
+    const list = $("preview");
+    if (previewNames === null && state.gist) {
+        $("previewHeading").textContent = "Roster preview (gist not loaded)";
+        list.replaceChildren();
+        return;
+    }
+    const names = previewNames ?? [];
+    $("previewHeading").textContent = names.length
+        ? `Roster preview (${names.length} student${names.length !== 1 ? "s" : ""})`
+        : "Roster preview: Student 001–020";
+    list.replaceChildren(...names.map((name) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        return li;
+    }));
 }
 
-function showLoading(text) {
-    const div = document.createElement("div");
-    div.className = "loading";
-    div.textContent = text;
-    $("studentList").replaceChildren(div);
-}
-
-function renderTitle() {
-    $("pageTitle").textContent = state.title || DEFAULT_TITLE;
-    document.title = state.title ? `${state.title} - ${DEFAULT_TITLE}` : `${DEFAULT_TITLE} - Classroom Screen Share`;
-}
-
-function renderStudentList() {
-    renderStudentRows($("studentList"), students, links);
-}
-
-// Keep the address bar (and the Class link box) in sync with the setup.
-async function writeHash() {
-    const seq = ++hashWriteSeq;
+// Rebuild the class link. This page's own address mirrors it, so a refresh
+// keeps the draft.
+async function writeLink() {
+    const seq = ++linkWriteSeq;
     const hasData = state.names || state.gist || state.password || state.title || state.baseUrl !== DEFAULT_BASE_URL;
     const data = hasData
         ? await encodeConfig({
@@ -76,13 +64,15 @@ async function writeHash() {
             title: state.title,
         })
         : null;
-    if (seq !== hashWriteSeq) return; // a newer change already won
+    if (seq !== linkWriteSeq) return; // a newer change already won
     history.replaceState(null, "", "#" + buildHash(state.session, data));
-    $("classLink").value = location.href;
-    if (location.href.length > 8000) {
+    const link = classLinkUrl(location.href, state.session, data);
+    $("classLink").value = link;
+    $("openLink").href = link;
+    if (link.length > 8000) {
         setStatus("linkStatus", "This link is very long; some apps may cut it off. Consider a gist roster.", "error");
     } else {
-        setStatus("linkStatus", state.gist ? LINK_NOTE_GIST : LINK_NOTE_NAMES);
+        setStatus("linkStatus", state.gist ? LINK_NOTE_GIST : state.names ? LINK_NOTE_NAMES : LINK_NOTE_SEATS);
     }
 }
 
@@ -96,9 +86,7 @@ function onConfigInput() {
         setStatus("configStatus", err.message, "error");
         return; // keep the last valid settings
     }
-    renderTitle();
-    renderStudentList();
-    writeHash();
+    writeLink();
 }
 
 function updateColumnSelector() {
@@ -126,7 +114,7 @@ function updateColumnSelector() {
     importFromColumn(parseInt(select.value, 10));
 }
 
-function importFromColumn(column) {
+async function importFromColumn(column) {
     if (csvText === null) return;
     const hasHeader = $("hasHeader").checked;
     let names;
@@ -143,9 +131,9 @@ function importFromColumn(column) {
         state.names = names;
         state.gist = null;
     }
-    students = assignIds(names);
-    renderStudentList();
-    writeHash();
+    previewNames = names;
+    renderPreview();
+    await writeLink();
     const from = csvGistRef ? " from the gist" : "";
     setStatus("csvStatus", `Imported ${names.length} student${names.length !== 1 ? "s" : ""}${from}. Copy the class link below.`, "success");
 }
@@ -193,6 +181,16 @@ async function handleLoadGist() {
     }
 }
 
+// Editing: point this page at the pasted link; the reload loads it.
+function handleLoadExisting() {
+    try {
+        const { session, data } = parseClassLink($("existingLink").value);
+        location.hash = buildHash(session, data);
+    } catch (err) {
+        setStatus("existingStatus", err.message, "error");
+    }
+}
+
 async function copyClassLink() {
     const input = $("classLink");
     try {
@@ -205,59 +203,61 @@ async function copyClassLink() {
     }
 }
 
-// Load whatever the link carries, then render. On any failure, show the
-// error and no roster: falling back to the default seats would look right but be wrong.
+// Start from this page's own hash: blank for a new link, or a class link
+// being edited.
 async function init() {
     const { session, data } = parseHash(location.hash);
     state.session = session ?? newSessionId();
 
     if (data) {
-        $("setup").open = false; // students and presenters land on the roster
+        let config;
         try {
-            const config = await decodeConfig(data);
-            if (config.baseUrl) state.baseUrl = config.baseUrl;
-            if (config.password) state.password = config.password;
-            if (config.title) state.title = config.title;
-            $("classTitle").value = state.title;
-            renderTitle();
-            $("baseUrl").value = state.baseUrl;
-            $("roomPassword").value = state.password;
-            if (config.names) {
-                state.names = config.names;
-                students = assignIds(config.names);
-            } else if (config.gist) {
-                state.gist = config.gist;
-                $("gistUrl").value = gistPageUrl(config.gist);
-                $("hasHeader").checked = config.gist.hasHeader;
-                showLoading("Loading the class roster…");
-                const text = await fetchGistText(config.gist);
-                students = assignIds(rosterNamesFromCSV(text, config.gist));
-            }
+            config = await decodeConfig(data);
         } catch (err) {
-            showLinkError(err.message);
-            students = [];
-            $("setup").open = true;
-            renderStudentList();
-            return; // leave the link as it was
+            setStatus("existingStatus", `${err.message}. Its session is kept; set the roster and settings again.`, "error");
+            config = {};
+        }
+        state.title = config.title ?? "";
+        state.baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
+        state.password = config.password ?? "";
+        state.names = config.names ?? null;
+        state.gist = config.gist ?? null;
+        if (config.names || config.gist) {
+            setStatus("existingStatus", "Editing an existing class link. Its session is kept, so students' Share links don't change.", "success");
+        }
+        if (state.gist) {
+            $("gistUrl").value = gistPageUrl(state.gist);
+            $("hasHeader").checked = state.gist.hasHeader;
+            setStatus("csvStatus", "Loading the gist…");
+            try {
+                previewNames = await loadRosterNames(config);
+                setStatus("csvStatus", `The gist lists ${previewNames.length} students.`, "success");
+            } catch (err) {
+                setStatus("csvStatus", `${err.message}. The link still points at this gist.`, "error");
+            }
+        } else {
+            previewNames = state.names;
         }
     }
 
+    $("classTitle").value = state.title;
     $("baseUrl").value = state.baseUrl;
     $("roomPassword").value = state.password;
-    renderStudentList();
-    await writeHash();
+    renderPreview();
+    await writeLink();
 }
 
+$("classTitle").addEventListener("input", onConfigInput);
 $("baseUrl").addEventListener("input", onConfigInput);
 $("roomPassword").addEventListener("input", onConfigInput);
-$("classTitle").addEventListener("input", onConfigInput);
 $("csvFile").addEventListener("change", handleFileSelect);
 $("hasHeader").addEventListener("change", updateColumnSelector);
 $("columnSelect").addEventListener("change", (e) => importFromColumn(parseInt(e.target.value, 10)));
 $("loadGist").addEventListener("click", handleLoadGist);
 $("gistUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLoadGist(); });
+$("loadExisting").addEventListener("click", handleLoadExisting);
+$("existingLink").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLoadExisting(); });
 $("copyLink").addEventListener("click", copyClassLink);
-// Pasting a different class link into this tab: start over from it.
 window.addEventListener("hashchange", () => location.reload());
 
 init();

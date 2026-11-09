@@ -621,3 +621,52 @@ export function rosterNamesFromCSV(text, options) {
     }
     return names;
 }
+
+// ---------------------------------------------------------------------------
+// Page helpers shared by the class page (index.html) and create page.
+// ---------------------------------------------------------------------------
+
+/**
+ * The class link: the class page in the same folder as `fromHref`.
+ * @param {string} fromHref
+ * @param {string} session
+ * @param {string | null} data
+ * @returns {string}
+ */
+export function classLinkUrl(fromHref, session, data) {
+    const url = new URL("./", fromHref);
+    url.hash = buildHash(session, data);
+    return url.href;
+}
+
+/**
+ * Read the session and data from a class link pasted into the create page.
+ * @param {string} input
+ * @returns {{ session: string, data: string | null }}
+ */
+export function parseClassLink(input) {
+    let url;
+    try {
+        url = new URL(input.trim());
+    } catch {
+        throw new Error("That isn't a class link");
+    }
+    const { session, data } = parseHash(url.hash);
+    if (!["https:", "http:"].includes(url.protocol) || session === null) {
+        throw new Error("That isn't a class link");
+    }
+    return { session, data };
+}
+
+/**
+ * The roster a class link describes: its names, the names in its gist, or
+ * null when it has neither (the page then shows numbered seats).
+ * @param {ClassConfig} config
+ * @param {typeof fetch} [fetchImpl]
+ * @returns {Promise<string[] | null>}
+ */
+export async function loadRosterNames(config, fetchImpl = fetch) {
+    if (config.names) return config.names;
+    if (config.gist) return rosterNamesFromCSV(await fetchGistText(config.gist, fetchImpl), config.gist);
+    return null;
+}
