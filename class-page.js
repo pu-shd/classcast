@@ -58,7 +58,6 @@ async function init() {
     }
 }
 
-for (const el of document.querySelectorAll(".pt-year")) el.textContent = String(new Date().getFullYear());
 
 // Pasting a different class link into this tab: start over from it.
 window.addEventListener("hashchange", () => location.reload());

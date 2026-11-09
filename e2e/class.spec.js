@@ -53,9 +53,7 @@ test("hostile names and titles in a link render as text", async ({ page }) => {
     await expect(page.locator(".student-row")).toHaveCount(2);
     expect(await rowNames(page)).toEqual([evil, "Bob"]);
     await expect(page.locator("h1")).toHaveText(evil);
-    // Only the two Princeton logos may be images.
-    await expect(page.locator("main img")).toHaveCount(0);
-    await expect(page.locator("img")).toHaveCount(2);
+    await expect(page.locator("img")).toHaveCount(0);
     expect(await page.evaluate(() => /** @type {any} */ (window).pwned)).toBeUndefined();
 });
 

@@ -114,9 +114,7 @@ test("hostile names in an imported CSV stay as text", async ({ page }) => {
     await page.setInputFiles("#csvFile", csv("evil.csv", `Name\n"${evil.replace(/"/g, '""')}"\nBob\n`));
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 2/);
     expect(await previewNames(page)).toEqual([evil, "Bob"]);
-    // Only the two Princeton logos may be images.
-    await expect(page.locator("main img")).toHaveCount(0);
-    await expect(page.locator("img")).toHaveCount(2);
+    await expect(page.locator("img")).toHaveCount(0);
     expect(await page.evaluate(() => /** @type {any} */ (window).pwned)).toBeUndefined();
 });
 

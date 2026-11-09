@@ -6,12 +6,12 @@ import { extname, join, normalize } from "node:path";
 const ROOT = new URL("..", import.meta.url).pathname;
 const ALLOWED = new Set([
     "/index.html", "/create.html", "/class-page.js", "/create-page.js", "/classcast.js", "/styles.css",
-    ...["tokens.css", "fonts.css", "layout.css", "header.css", "footer.css", "buttons.css", "forms.css",
-        "logos/pu-logo.svg", "logos/pu-logo-stacked.svg", "logos/favicon.ico"].map((f) => `/vendor/paper-tiger/${f}`),
+    ...["tokens.css", "fonts.css", "layout.css", "header.css", "buttons.css", "forms.css", "logos/favicon.ico"]
+        .map((f) => `/vendor/paper-tiger/${f}`),
 ]);
 const TYPES = {
     ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-    ".svg": "image/svg+xml", ".ico": "image/x-icon",
+    ".ico": "image/x-icon",
 };
 const port = Number(process.env.PORT ?? "4173");
 
