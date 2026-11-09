@@ -44,7 +44,9 @@
         </ul>
     </div>
 
-    <script>
+    <script type="module">
+        import { assignIds, parseCSV, detectNameColumn, namesFromRows, shareUrl, viewUrl } from "./classcast.js";
+
         // Student list - starts with synthetic data, can be replaced via CSV import
         let students = [
             { name: "Alice Chen", id: "alice" },
@@ -64,16 +66,13 @@
             { name: "Olivia White", id: "olivia" }
         ];
 
-        // Room prefix - for the interactive page, generate once and store in localStorage
-        // so all users sharing the same page URL get the same links
+        // Room prefix - kept in the URL hash so everyone sharing the page URL gets the same links
         function getRoomPrefix() {
-            // Check URL hash first (allows sharing specific session via URL)
             const hashMatch = window.location.hash.match(/session=([a-z0-9]+)/i);
             if (hashMatch) {
                 return "uc_" + hashMatch[1] + "_";
             }
-            // Otherwise generate new session and put in URL hash for easy sharing
-            let sessionId = Math.random().toString(36).substring(2, 10);
+            const sessionId = Math.random().toString(36).substring(2, 10);
             window.location.hash = "session=" + sessionId;
             return "uc_" + sessionId + "_";
         }
@@ -82,76 +81,11 @@
 
         // CSV parsing state
         let csvData = null;
-        let csvHeaders = null;
 
-        function getBaseUrl() {
-            return document.getElementById('baseUrl').value.replace(/\/$/, '');
-        }
-
-        function getPassword() {
-            return document.getElementById('roomPassword').value.trim();
-        }
-
-        function generateShareUrl(studentId) {
-            const base = getBaseUrl();
-            const streamId = roomPrefix + studentId;
-            const password = getPassword();
-            const pwParam = password ? `&password=${encodeURIComponent(password)}` : '';
-            // quality=0 for 1080p, screensharecontenthint=detail for sharp text
-            return `${base}/?push=${streamId}&screenshare&quality=0&screensharecontenthint=detail&audiobitrate=0&noaudio${pwParam}`;
-        }
-
-        function generateViewUrl(studentId) {
-            const base = getBaseUrl();
-            const streamId = roomPrefix + studentId;
-            const password = getPassword();
-            const pwParam = password ? `&password=${encodeURIComponent(password)}` : '';
-            // High bitrate, no scaling, sharper screen for text clarity
-            return `${base}/?view=${streamId}&scene&videobitrate=12000&scale=100&sharperscreen&codec=vp9${pwParam}`;
-        }
-
-        // Generate a URL-safe ID from a name
-        function nameToId(name) {
-            return name
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '_')
-                .replace(/^_|_$/g, '')
-                .substring(0, 30);
-        }
-
-        // Parse CSV content
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/).filter(line => line.trim());
-            if (lines.length === 0) return { headers: [], rows: [] };
-
-            const parseRow = (line) => {
-                const result = [];
-                let current = '';
-                let inQuotes = false;
-
-                for (let i = 0; i < line.length; i++) {
-                    const char = line[i];
-                    if (char === '"') {
-                        if (inQuotes && line[i + 1] === '"') {
-                            current += '"';
-                            i++;
-                        } else {
-                            inQuotes = !inQuotes;
-                        }
-                    } else if (char === ',' && !inQuotes) {
-                        result.push(current.trim());
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                result.push(current.trim());
-                return result;
-            };
-
-            const rows = lines.map(parseRow);
-            return { headers: rows[0], rows: rows };
-        }
+        const getBaseUrl = () => document.getElementById('baseUrl').value;
+        const getPassword = () => document.getElementById('roomPassword').value.trim();
+        const generateShareUrl = (id) => shareUrl(getBaseUrl(), roomPrefix + id, getPassword());
+        const generateViewUrl = (id) => viewUrl(getBaseUrl(), roomPrefix + id, getPassword());
 
         // Update column selector dropdown
         function updateColumnSelector() {
@@ -166,24 +100,19 @@
 
             const firstRow = csvData.rows[0];
             if (firstRow.length <= 1) {
-                // Single column, no need for selector
                 label.classList.remove('visible');
                 importFromColumn(0);
                 return;
             }
 
-            // Multiple columns - show selector
             label.classList.add('visible');
             select.innerHTML = firstRow.map((col, i) => {
                 const displayName = hasHeader ? col : `Column ${i + 1}`;
                 return `<option value="${i}">${displayName}</option>`;
             }).join('');
 
-            // Auto-select column with "name" in header if present
             if (hasHeader) {
-                const nameIndex = firstRow.findIndex(h =>
-                    /name/i.test(h) || /student/i.test(h)
-                );
+                const nameIndex = detectNameColumn(firstRow);
                 if (nameIndex >= 0) {
                     select.value = nameIndex;
                 }
@@ -199,33 +128,14 @@
 
             if (!csvData || csvData.rows.length === 0) return;
 
-            const startRow = hasHeader ? 1 : 0;
-            const names = csvData.rows
-                .slice(startRow)
-                .map(row => row[colIndex])
-                .filter(name => name && name.trim());
-
+            const names = namesFromRows(csvData.rows, { hasHeader, column: colIndex });
             if (names.length === 0) {
                 status.textContent = 'No valid names found in selected column';
                 status.className = 'csv-status error';
                 return;
             }
 
-            // Generate unique IDs
-            const idCounts = {};
-            students = names.map(name => {
-                let baseId = nameToId(name);
-                if (!baseId) baseId = 'student';
-
-                if (idCounts[baseId]) {
-                    idCounts[baseId]++;
-                    return { name: name.trim(), id: `${baseId}_${idCounts[baseId]}` };
-                } else {
-                    idCounts[baseId] = 1;
-                    return { name: name.trim(), id: baseId };
-                }
-            });
-
+            students = assignIds(names);
             status.textContent = `Imported ${students.length} student${students.length !== 1 ? 's' : ''}`;
             status.className = 'csv-status success';
             renderStudentList();
@@ -271,8 +181,8 @@
                         ${student.name}
                         <span class="student-id">#${student.id}</span>
                     </span>
-                    <a href="${generateShareUrl(student.id)}" target="_blank" class="btn btn-share" onclick="this.href=generateShareUrl('${student.id}')">Share</a>
-                    <a href="${generateViewUrl(student.id)}" target="_blank" class="btn btn-view" onclick="this.href=generateViewUrl('${student.id}')">View</a>
+                    <a href="${generateShareUrl(student.id)}" target="_blank" class="btn btn-share">Share</a>
+                    <a href="${generateViewUrl(student.id)}" target="_blank" class="btn btn-view">View</a>
                 </div>
             `).join('');
         }
