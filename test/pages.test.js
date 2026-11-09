@@ -40,3 +40,16 @@ test("loadRosterNames returns link names, gist names, or null for default seats"
     const missing = /** @type {typeof fetch} */ (async () => new Response("", { status: 404 }));
     await assert.rejects(loadRosterNames({ gist }, missing), /not found/);
 });
+
+test("rosterFromEditor: cleaned names, or null when it means the default seats", async () => {
+    const { rosterFromEditor, defaultStudents, LIMITS } = await import("../classcast.js");
+    assert.deepEqual(rosterFromEditor([" Alice ", "", "  ", "Bob‮"]), ["Alice", "Bob"]);
+    assert.equal(rosterFromEditor([]), null);
+    assert.equal(rosterFromEditor(["", " "]), null);
+    const seats = defaultStudents().map((s) => s.name);
+    assert.equal(rosterFromEditor(seats), null, "unchanged default seats stay out of the link");
+    assert.equal(rosterFromEditor([...seats, ""]), null);
+    assert.deepEqual(rosterFromEditor(seats.slice(0, 19)), seats.slice(0, 19));
+    assert.deepEqual(rosterFromEditor(["Student 001"]), ["Student 001"]);
+    assert.throws(() => rosterFromEditor(Array(LIMITS.maxStudents + 1).fill("A")), /limit is/);
+});

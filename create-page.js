@@ -1,10 +1,11 @@
 // ClassCast create page: builds the class link from a title, settings and
-// a roster (CSV file or secret gist). The class page itself is index.html.
+// a roster (typed inline, imported from CSV, or read from a secret gist).
+// The class page itself is index.html.
 import {
     DEFAULT_BASE_URL, LIMITS, parseCSV, detectNameColumn, rosterNamesFromCSV,
     renderColumnOptions, cleanText, normalizeBaseUrl, newSessionId, encodeConfig, decodeConfig,
     parseHash, buildHash, parseGistRef, gistPageUrl, fetchGistText, loadRosterNames,
-    classLinkUrl, parseClassLink,
+    classLinkUrl, parseClassLink, defaultStudents, rosterFromEditor,
 } from "./classcast.js";
 
 const $ = (id) => document.getElementById(id);
@@ -21,7 +22,6 @@ const state = {
     names: null, // roster carried in the link, or null
     gist: null, // { user, id, file?, hasHeader, column } when the roster comes from a gist
 };
-let previewNames = null; // what the class page will list, when known
 let csvText = null; // CSV being imported, from a file or a gist
 let csvGistRef = null; // set when csvText came from a gist
 let linkWriteSeq = 0;
@@ -32,22 +32,125 @@ function setStatus(id, text, kind) {
     el.className = "csv-status" + (kind ? " " + kind : "");
 }
 
-function renderPreview() {
-    const list = $("preview");
-    if (previewNames === null && state.gist) {
-        $("previewHeading").textContent = "Roster preview (gist not loaded)";
-        list.replaceChildren();
+const defaultNames = () => defaultStudents().map((s) => s.name);
+
+// --- Inline roster editor -------------------------------------------------
+// One text field per student. Rows are only rebuilt on structural changes
+// (import, add, remove, reset), so typing never loses focus.
+
+function nameInputs() {
+    return [...$("rosterList").querySelectorAll("input")];
+}
+
+function relabelRows() {
+    nameInputs().forEach((input, i) => {
+        input.setAttribute("aria-label", `Student ${i + 1} name`);
+        input.nextElementSibling?.setAttribute("aria-label", `Remove student ${i + 1}`);
+    });
+}
+
+function makeRow(name, readonly) {
+    const li = document.createElement("li");
+    const row = document.createElement("div");
+    row.className = "roster-row";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = name;
+    input.maxLength = LIMITS.maxNameLength;
+    input.spellcheck = false;
+    input.readOnly = readonly;
+    row.append(input);
+    if (!readonly) {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "btn btn-remove";
+        remove.textContent = "×";
+        row.append(remove);
+    }
+    li.append(row);
+    return li;
+}
+
+// readonly: the names come from a gist, which stays the source of truth.
+function renderEditor(names, { readonly = false } = {}) {
+    $("rosterList").replaceChildren(...names.map((n) => makeRow(n, readonly)));
+    $("gistNote").hidden = !readonly;
+    $("addStudent").hidden = readonly;
+    $("resetRoster").hidden = readonly;
+    relabelRows();
+    updateRosterText();
+}
+
+function updateRosterText() {
+    const count = nameInputs().filter((i) => i.value.trim()).length;
+    $("addStudent").disabled = nameInputs().length >= LIMITS.maxStudents;
+    if (state.gist) {
+        $("rosterHeading").textContent = `Students (${count}, from your gist)`;
+        setStatus("rosterHint", "");
+    } else if (state.names) {
+        $("rosterHeading").textContent = `Students (${state.names.length})`;
+        setStatus("rosterHint", "Names are saved in the class link. Blank rows are skipped.");
+    } else {
+        $("rosterHeading").textContent = "Students";
+        setStatus("rosterHint", "Numbered seats by default. Type names over them, add or remove rows; blank rows are skipped.");
+    }
+}
+
+function onEditorChange() {
+    if (state.gist) return;
+    try {
+        state.names = rosterFromEditor(nameInputs().map((i) => i.value));
+    } catch (err) {
+        setStatus("rosterHint", err.message, "error");
         return;
     }
-    const names = previewNames ?? [];
-    $("previewHeading").textContent = names.length
-        ? `Roster preview (${names.length} student${names.length !== 1 ? "s" : ""})`
-        : "Roster preview: Student 001–020";
-    list.replaceChildren(...names.map((name) => {
-        const li = document.createElement("li");
-        li.textContent = name;
-        return li;
-    }));
+    updateRosterText();
+    writeLink();
+}
+
+function insertRow(afterIndex) {
+    if (nameInputs().length >= LIMITS.maxStudents) return;
+    const li = makeRow("", false);
+    const items = $("rosterList").children;
+    if (afterIndex >= 0 && afterIndex < items.length - 1) items[afterIndex].after(li);
+    else $("rosterList").append(li);
+    relabelRows();
+    updateRosterText();
+    li.querySelector("input").focus();
+}
+
+function handleRosterClick(event) {
+    const remove = event.target.closest(".btn-remove");
+    if (!remove) return;
+    const li = remove.closest("li");
+    const next = li.nextElementSibling ?? li.previousElementSibling;
+    li.remove();
+    relabelRows();
+    onEditorChange();
+    next?.querySelector("input")?.focus();
+}
+
+function handleRosterKeydown(event) {
+    if (event.key !== "Enter" || event.target.tagName !== "INPUT" || state.gist) return;
+    event.preventDefault();
+    insertRow(nameInputs().indexOf(event.target));
+}
+
+function resetRoster() {
+    state.names = null;
+    state.gist = null;
+    renderEditor(defaultNames());
+    setStatus("csvStatus", "");
+    writeLink();
+}
+
+// Stop using the gist: keep its current names, now editable and saved in the link.
+function detachGist() {
+    const names = nameInputs().map((i) => i.value);
+    state.gist = null;
+    renderEditor(names);
+    onEditorChange();
+    setStatus("csvStatus", "Stopped using the gist; the names are now saved in the class link.", "success");
 }
 
 // Rebuild the class link. This page's own address mirrors it, so a refresh
@@ -128,14 +231,13 @@ async function importFromColumn(column) {
         state.gist = { ...csvGistRef, hasHeader, column };
         state.names = null;
     } else {
-        state.names = names;
+        state.names = rosterFromEditor(names);
         state.gist = null;
     }
-    previewNames = names;
-    renderPreview();
+    renderEditor(names, { readonly: Boolean(csvGistRef) });
     await writeLink();
     const from = csvGistRef ? " from the gist" : "";
-    setStatus("csvStatus", `Imported ${names.length} student${names.length !== 1 ? "s" : ""}${from}. Copy the class link below.`, "success");
+    setStatus("csvStatus", `Imported ${names.length} student${names.length !== 1 ? "s" : ""}${from} into the list above.`, "success");
 }
 
 function startImport(text, gistRef) {
@@ -225,25 +327,28 @@ async function init() {
         if (config.names || config.gist) {
             setStatus("existingStatus", "Editing an existing class link. Its session is kept, so students' Share links don't change.", "success");
         }
-        if (state.gist) {
-            $("gistUrl").value = gistPageUrl(state.gist);
-            $("hasHeader").checked = state.gist.hasHeader;
-            setStatus("csvStatus", "Loading the gist…");
-            try {
-                previewNames = await loadRosterNames(config);
-                setStatus("csvStatus", `The gist lists ${previewNames.length} students.`, "success");
-            } catch (err) {
-                setStatus("csvStatus", `${err.message}. The link still points at this gist.`, "error");
-            }
-        } else {
-            previewNames = state.names;
+    }
+
+    if (state.gist) {
+        $("importSection").open = true;
+        $("gistUrl").value = gistPageUrl(state.gist);
+        $("hasHeader").checked = state.gist.hasHeader;
+        setStatus("csvStatus", "Loading the gist…");
+        renderEditor([], { readonly: true });
+        try {
+            const names = await loadRosterNames({ gist: state.gist });
+            renderEditor(names ?? [], { readonly: true });
+            setStatus("csvStatus", `The gist lists ${names?.length ?? 0} students.`, "success");
+        } catch (err) {
+            setStatus("csvStatus", `${err.message}. The link still points at this gist.`, "error");
         }
+    } else {
+        renderEditor(state.names ?? defaultNames());
     }
 
     $("classTitle").value = state.title;
     $("baseUrl").value = state.baseUrl;
     $("roomPassword").value = state.password;
-    renderPreview();
     await writeLink();
 }
 
@@ -258,6 +363,12 @@ $("gistUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") handleL
 $("loadExisting").addEventListener("click", handleLoadExisting);
 $("existingLink").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLoadExisting(); });
 $("copyLink").addEventListener("click", copyClassLink);
+$("rosterList").addEventListener("input", onEditorChange);
+$("rosterList").addEventListener("click", handleRosterClick);
+$("rosterList").addEventListener("keydown", handleRosterKeydown);
+$("addStudent").addEventListener("click", () => insertRow(-1));
+$("resetRoster").addEventListener("click", resetRoster);
+$("detachGist").addEventListener("click", detachGist);
 window.addEventListener("hashchange", () => location.reload());
 
 init();

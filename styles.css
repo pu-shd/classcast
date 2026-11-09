@@ -481,22 +481,6 @@ h1 {
     margin-top: 0;
 }
 
-.preview h3 {
-    margin: 0 0 10px 0;
-    font-size: 0.95rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.preview ol {
-    margin: 0;
-    padding-left: 28px;
-    color: var(--text-primary);
-    line-height: 1.6;
-    max-height: 320px;
-    overflow-y: auto;
-}
-
 .class-link-row .btn-view {
     margin-left: 0;
     white-space: nowrap;
@@ -514,4 +498,97 @@ h1 {
 
 .page-footer a {
     color: var(--accent-secondary);
+}
+
+/* Inline roster editor */
+.roster-editor h3 {
+    margin: 0 0 6px 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.roster-list {
+    margin: 12px 0;
+    padding-left: 36px;
+    max-height: 420px;
+    overflow-y: auto;
+    color: var(--text-muted);
+}
+
+.roster-list li {
+    margin-bottom: 6px;
+}
+
+.roster-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.config .roster-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+}
+
+.config .roster-row input[readonly] {
+    color: var(--text-secondary);
+    border-style: dashed;
+}
+
+.btn-remove {
+    margin-left: 0;
+    padding: 6px 10px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    font-size: 16px;
+    line-height: 1;
+}
+
+.btn-remove:hover {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.roster-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-small {
+    margin-left: 0;
+    padding: 8px 14px;
+    font-size: 13px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-quiet {
+    color: var(--text-secondary);
+}
+
+.gist-note {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Advanced import, collapsed behind a disclosure triangle */
+.csv-import.advanced > summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.csv-import.advanced[open] > summary {
+    margin-bottom: 14px;
 }

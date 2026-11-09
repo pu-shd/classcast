@@ -31,8 +31,22 @@
         <div class="csv-status" id="configStatus"></div>
     </div>
 
-    <div class="csv-import">
-        <h3>Student roster (optional; without one the class page lists Student 001–020)</h3>
+    <div class="config roster-editor">
+        <h3 id="rosterHeading">Students</h3>
+        <div class="csv-status" id="rosterHint"></div>
+        <div class="gist-note" id="gistNote" hidden>
+            <span>These names come from your gist. Edit the gist to change them, or:</span>
+            <button type="button" class="btn btn-small" id="detachGist">Edit names here instead</button>
+        </div>
+        <ol class="roster-list" id="rosterList"></ol>
+        <div class="roster-actions">
+            <button type="button" class="btn btn-small" id="addStudent">Add student</button>
+            <button type="button" class="btn btn-small btn-quiet" id="resetRoster">Reset to Student 001–020</button>
+        </div>
+    </div>
+
+    <details class="csv-import advanced" id="importSection">
+        <summary>Import student list from CSV or a secret gist</summary>
         <div class="csv-row">
             <input type="file" id="csvFile" accept=".csv,.txt">
             <label>
@@ -52,7 +66,7 @@
             </div>
         </div>
         <div class="csv-status" id="csvStatus"></div>
-    </div>
+    </details>
 
     <div class="config class-link">
         <label for="classLink">Class link: post this for students and open it on the presenter's computer</label>
@@ -62,11 +76,6 @@
             <a class="btn btn-view" id="openLink" href="./" target="_blank" rel="noopener">Open</a>
         </div>
         <div class="csv-status" id="linkStatus"></div>
-    </div>
-
-    <div class="config preview">
-        <h3 id="previewHeading">Roster preview</h3>
-        <ol id="preview"></ol>
     </div>
 
     <script type="module" src="create-page.js"></script>

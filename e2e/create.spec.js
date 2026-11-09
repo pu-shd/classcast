@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { csv, rowNames, shareHrefs, previewNames, freshPage } from "./helpers.js";
+import { csv, rowNames, shareHrefs, previewNames, freshPage, openImport } from "./helpers.js";
 
 test.beforeEach(async ({ page }) => {
     page.on("pageerror", (err) => { throw err; });
@@ -13,10 +13,11 @@ test("a CSV roster and settings become a class link to the class page", async ({
     await page.fill("#classTitle", "ORF 309 Screen Share");
     await page.fill("#roomPassword", "s3cret pw");
     await page.fill("#baseUrl", "https://pu-shd.github.io/classcast/vdo.ninja/");
+    await openImport(page);
     await page.setInputFiles("#csvFile", csv("roster.csv", "ID,Student Name,Major\n1,Seán Ó Briain,Math\n2,王小明,CS\n3,Ana,Bio\n4,Ana,Art\n"));
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 4 students/);
     expect(await previewNames(page)).toEqual(["Seán Ó Briain", "王小明", "Ana", "Ana"]);
-    await expect(page.locator("#previewHeading")).toHaveText("Roster preview (4 students)");
+    await expect(page.locator("#rosterHeading")).toHaveText("Students (4)");
 
     const link = await classLink(page);
     expect(link).toMatch(/^http:\/\/127\.0\.0\.1:4173\/#session=[a-z0-9]{10}&d=z[A-Za-z0-9_-]+$/);
@@ -36,7 +37,8 @@ test("with no roster, the link gives numbered seats and keeps the title", async 
     await page.fill("#classTitle", "Lab");
     await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
     await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
-    await expect(page.locator("#previewHeading")).toHaveText("Roster preview: Student 001–020");
+    await expect(page.locator("#rosterHeading")).toHaveText("Students");
+    expect((await previewNames(page)).length).toBe(20);
     const student = await freshPage(browser);
     await student.goto(await classLink(page));
     await expect(student.locator(".student-row")).toHaveCount(20);
@@ -47,6 +49,7 @@ test("editing an existing class link keeps its session and settings", async ({ p
     await page.goto("/create.html");
     await page.fill("#classTitle", "Week 1");
     await page.fill("#roomPassword", "pw");
+    await openImport(page);
     await page.setInputFiles("#csvFile", csv("r.csv", "Name\nAlice\nBob\n"));
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 2/);
     const original = await classLink(page);
@@ -76,6 +79,7 @@ test("a refresh keeps the draft", async ({ page }) => {
     await page.goto("/create.html");
     await page.fill("#classTitle", "Draft");
     await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await openImport(page);
     await page.setInputFiles("#csvFile", csv("r.csv", "Name\nAlice\n"));
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 1/);
     const link = await classLink(page);
@@ -102,11 +106,96 @@ test("a damaged link opened for editing keeps its session and says so", async ({
     expect(await classLink(page)).toBe("http://127.0.0.1:4173/#session=abc123");
 });
 
-test("hostile names in a CSV preview render as text", async ({ page }) => {
+test("hostile names in an imported CSV stay as text", async ({ page }) => {
     const evil = '<img src=x onerror="window.pwned=1">';
     await page.goto("/create.html");
+    await openImport(page);
     await page.setInputFiles("#csvFile", csv("evil.csv", `Name\n"${evil.replace(/"/g, '""')}"\nBob\n`));
+    await expect(page.locator("#csvStatus")).toHaveText(/Imported 2/);
     expect(await previewNames(page)).toEqual([evil, "Bob"]);
     await expect(page.locator("img")).toHaveCount(0);
     expect(await page.evaluate(() => /** @type {any} */ (window).pwned)).toBeUndefined();
+});
+
+test("the CSV and gist import is collapsed by default", async ({ page }) => {
+    await page.goto("/create.html");
+    await expect(page.locator("#importSection")).not.toHaveAttribute("open", "");
+    await expect(page.locator("#csvFile")).toBeHidden();
+    await expect(page.locator("#gistUrl")).toBeHidden();
+    await page.click("#importSection > summary");
+    await expect(page.locator("#csvFile")).toBeVisible();
+    await expect(page.locator("#gistUrl")).toBeVisible();
+});
+
+test("names can be edited inline and travel in the link", async ({ page, browser }) => {
+    await page.goto("/create.html");
+    const fields = page.locator("#rosterList input");
+    await expect(fields).toHaveCount(20);
+    await expect(fields.nth(0)).toHaveValue("Student 001");
+    await expect(page.locator("#classLink")).not.toHaveValue(/&d=/);
+
+    await fields.nth(1).fill("Bob Martinez");
+    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await expect(page.locator("#rosterHeading")).toHaveText("Students (20)");
+
+    const student = await freshPage(browser);
+    await student.goto(await page.locator("#classLink").inputValue());
+    const listed = await rowNames(student);
+    expect(listed.slice(0, 3)).toEqual(["Student 001", "Bob Martinez", "Student 003"]);
+    expect((await shareHrefs(student))[1]).toMatch(/_bob_martinez&/);
+});
+
+test("rows can be added, removed and reset; blanks are skipped", async ({ page, browser }) => {
+    await page.goto("/create.html");
+    const fields = page.locator("#rosterList input");
+    // Clear the numbered seats down to two named students.
+    for (let i = 0; i < 18; i++) await page.locator("#rosterList .btn-remove").last().click();
+    await expect(fields).toHaveCount(2);
+    await fields.nth(0).fill("Alice");
+    await fields.nth(1).fill("Carol");
+    // Enter adds a row right after the current one and focuses it.
+    await fields.nth(0).press("Enter");
+    await expect(fields).toHaveCount(3);
+    await expect(fields.nth(1)).toBeFocused();
+    await page.keyboard.type("Bob");
+    await page.click("#addStudent");
+    await expect(fields).toHaveCount(4);
+    await expect(fields.nth(3)).toBeFocused(); // left blank
+    await expect(page.locator("#rosterHeading")).toHaveText("Students (3)");
+    await expect(fields.nth(1)).toHaveAttribute("aria-label", "Student 2 name");
+
+    const student = await freshPage(browser);
+    await student.goto(await page.locator("#classLink").inputValue());
+    expect(await rowNames(student)).toEqual(["Alice", "Bob", "Carol"]);
+
+    await page.click("#resetRoster");
+    await expect(fields).toHaveCount(20);
+    await expect(fields.nth(0)).toHaveValue("Student 001");
+    await expect(page.locator("#classLink")).not.toHaveValue(/&d=/);
+});
+
+test("clearing every name falls back to numbered seats", async ({ page }) => {
+    await page.goto("/create.html");
+    await page.locator("#rosterList input").first().fill("Only One");
+    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    for (const field of await page.locator("#rosterList input").all()) await field.fill("");
+    await expect(page.locator("#classLink")).not.toHaveValue(/&d=/);
+    await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
+});
+
+test("an imported CSV lands in the editor and can be corrected", async ({ page, browser }) => {
+    await page.goto("/create.html");
+    await openImport(page);
+    await page.setInputFiles("#csvFile", csv("r.csv", "Name\nAlcie\nBob\n"));
+    await expect(page.locator("#csvStatus")).toHaveText(/into the list above/);
+    expect(await previewNames(page)).toEqual(["Alcie", "Bob"]);
+    await page.locator("#rosterList input").first().fill("Alice");
+    await expect(page.locator("#rosterHeading")).toHaveText("Students (2)");
+    const student = await freshPage(browser);
+    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    // Wait until the link reflects the correction, then open it.
+    await expect.poll(async () => {
+        await student.goto(await page.locator("#classLink").inputValue());
+        return rowNames(student);
+    }).toEqual(["Alice", "Bob"]);
 });
