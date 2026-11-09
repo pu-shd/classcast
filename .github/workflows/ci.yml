@@ -17,6 +17,8 @@ jobs:
         run: docker build -t umbracast-test .
       - name: Lint, type check and test
         run: docker run --rm umbracast-test
+      - name: Dependency audit
+        run: docker run --rm umbracast-test npm audit --audit-level=moderate
 
   e2e:
     runs-on: ubuntu-24.04
