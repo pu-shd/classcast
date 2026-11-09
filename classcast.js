@@ -215,8 +215,16 @@ const SESSION_RE = /^[a-z0-9]{4,32}$/i;
 const UNSAFE_CHARS_RE = /[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g;
 
 /**
+ * Where to fetch the roster from: a gist file plus how to read the CSV.
+ * @typedef {{ user: string, id: string, file?: string }} GistRef
+ * @typedef {GistRef & { hasHeader: boolean, column: number }} GistSource
+ */
+
+/**
+ * A link carries either `names` or `gist`, never both.
  * @typedef {{
  *   names?: string[],
+ *   gist?: GistSource,
  *   baseUrl?: string,
  *   password?: string,
  * }} ClassConfig
@@ -356,6 +364,10 @@ export function validateConfig(raw) {
         if (names.length === 0) throw new Error("Class link roster is empty");
         config.names = names;
     }
+    if (obj.g !== undefined) {
+        if (config.names) throw new Error("Class link has both a roster and a gist");
+        config.gist = validateGistSource(obj.g);
+    }
     if (obj.b !== undefined) {
         if (typeof obj.b !== "string") throw new Error("Class link base URL is damaged");
         config.baseUrl = normalizeBaseUrl(obj.b);
@@ -376,7 +388,12 @@ export function validateConfig(raw) {
 export async function encodeConfig(config) {
     /** @type {Record<string, unknown>} */
     const wire = { v: CONFIG_VERSION };
-    if (config.names) wire.n = config.names;
+    if (config.gist) {
+        const { user, id, file, hasHeader, column } = config.gist;
+        wire.g = { u: user, i: id, h: hasHeader ? 1 : 0, c: column, ...(file ? { f: file } : {}) };
+    } else if (config.names) {
+        wire.n = config.names;
+    }
     if (config.baseUrl && config.baseUrl !== DEFAULT_BASE_URL) wire.b = config.baseUrl;
     if (config.password) wire.p = config.password;
     const json = new TextEncoder().encode(JSON.stringify(wire));
@@ -441,4 +458,148 @@ export function parseHash(hash) {
  */
 export function buildHash(session, data) {
     return data ? `session=${session}&d=${data}` : `session=${session}`;
+}
+
+// ---------------------------------------------------------------------------
+// Gist rosters: the link points at a secret gist, so the teacher can edit
+// the roster without the link changing. Raw gist URLs allow cross-origin
+// reads and are not rate-limited like the gist API (GitHub caches them ~5 min).
+// ---------------------------------------------------------------------------
+
+export const GIST_LIMITS = Object.freeze({ maxBytes: 1024 * 1024, timeoutMs: 10_000, maxColumn: 99 });
+
+const GIST_USER_RE = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const GIST_ID_RE = /^[0-9a-f]{20,40}$/i;
+// eslint-disable-next-line no-control-regex
+const GIST_FILE_RE = /^[^/\\\u0000-\u001f\u007f]{1,255}$/;
+
+/**
+ * @param {string} user
+ * @param {string} id
+ * @param {string | undefined} file
+ * @returns {GistRef}
+ */
+function checkGistRef(user, id, file) {
+    if (!GIST_USER_RE.test(user)) throw new Error("Gist owner name is not valid");
+    if (!GIST_ID_RE.test(id)) throw new Error("Gist ID is not valid");
+    if (file !== undefined && (!GIST_FILE_RE.test(file) || file === "." || file === "..")) {
+        throw new Error("Gist file name is not valid");
+    }
+    return file === undefined ? { user, id } : { user, id, file };
+}
+
+/**
+ * Accept the gist links a teacher is likely to paste:
+ *   https://gist.github.com/user/id[/revision]
+ *   https://gist.githubusercontent.com/user/id/raw[/revision][/file]
+ *   user/id
+ * Revisions are dropped so the link always follows the latest roster.
+ * @param {string} input
+ * @returns {GistRef}
+ */
+export function parseGistRef(input) {
+    const text = input.trim();
+    const short = text.match(/^([^/\s]+)\/([^/\s]+)$/);
+    if (short) return checkGistRef(short[1], short[2], undefined);
+
+    let url;
+    try {
+        url = new URL(text);
+    } catch {
+        throw new Error("Paste a gist link like https://gist.github.com/you/1a2b3c...");
+    }
+    if (url.protocol !== "https:") throw new Error("Gist link must start with https://");
+    const parts = url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
+    if (url.hostname === "gist.github.com" && parts.length >= 2) {
+        return checkGistRef(parts[0], parts[1], undefined);
+    }
+    if (url.hostname === "gist.githubusercontent.com" && parts.length >= 3 && parts[2] === "raw") {
+        // /user/id/raw, /user/id/raw/file, /user/id/raw/<revision>/file
+        const rest = parts.slice(3);
+        const file = rest.length === 0 ? undefined : rest[rest.length - 1];
+        return checkGistRef(parts[0], parts[1], file);
+    }
+    throw new Error("That isn't a gist link (expected gist.github.com/...)");
+}
+
+/**
+ * @param {unknown} raw
+ * @returns {GistSource}
+ */
+export function validateGistSource(raw) {
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+        throw new Error("Class link gist is damaged");
+    }
+    const g = /** @type {Record<string, unknown>} */ (raw);
+    if (typeof g.u !== "string" || typeof g.i !== "string" || (g.f !== undefined && typeof g.f !== "string")) {
+        throw new Error("Class link gist is damaged");
+    }
+    if (g.h !== 0 && g.h !== 1) throw new Error("Class link gist is damaged");
+    if (typeof g.c !== "number" || !Number.isInteger(g.c) || g.c < 0 || g.c > GIST_LIMITS.maxColumn) {
+        throw new Error("Class link gist is damaged");
+    }
+    return { ...checkGistRef(g.u, g.i, g.f), hasHeader: g.h === 1, column: g.c };
+}
+
+/**
+ * The raw-content URL for the latest version of a gist (or one of its files).
+ * @param {GistRef} ref
+ * @returns {string}
+ */
+export function gistRawUrl(ref) {
+    const base = `https://gist.githubusercontent.com/${encodeURIComponent(ref.user)}/${encodeURIComponent(ref.id)}/raw`;
+    return ref.file ? `${base}/${encodeURIComponent(ref.file)}` : base;
+}
+
+/**
+ * The human-facing page for a gist, for showing back to the teacher.
+ * @param {GistRef} ref
+ * @returns {string}
+ */
+export function gistPageUrl(ref) {
+    return `https://gist.github.com/${encodeURIComponent(ref.user)}/${encodeURIComponent(ref.id)}`;
+}
+
+/**
+ * Download a gist's CSV text, with a timeout and a size cap.
+ * @param {GistRef} ref
+ * @param {typeof fetch} [fetchImpl]
+ * @returns {Promise<string>}
+ */
+export async function fetchGistText(ref, fetchImpl = fetch) {
+    let res;
+    try {
+        res = await fetchImpl(gistRawUrl(ref), {
+            credentials: "omit",
+            redirect: "error",
+            referrerPolicy: "no-referrer",
+            signal: AbortSignal.timeout(GIST_LIMITS.timeoutMs),
+        });
+    } catch (err) {
+        throw new Error("Couldn't reach GitHub to load the roster gist", { cause: err });
+    }
+    if (res.status === 404) throw new Error("Roster gist not found (was it deleted or renamed?)");
+    if (!res.ok) throw new Error(`Couldn't load the roster gist (HTTP ${res.status})`);
+    const declared = Number(res.headers.get("content-length") ?? "0");
+    if (declared > GIST_LIMITS.maxBytes) throw new Error("Roster gist is too large");
+    const text = await res.text();
+    if (new TextEncoder().encode(text).length > GIST_LIMITS.maxBytes) throw new Error("Roster gist is too large");
+    return text;
+}
+
+/**
+ * Turn roster CSV text into cleaned names, enforcing the roster limits.
+ * @param {string} text
+ * @param {{ hasHeader: boolean, column: number }} options
+ * @returns {string[]}
+ */
+export function rosterNamesFromCSV(text, options) {
+    const names = namesFromRows(parseCSV(text).rows, options)
+        .map((n) => cleanText(n, LIMITS.maxNameLength))
+        .filter(Boolean);
+    if (names.length === 0) throw new Error("No names found in the roster's name column");
+    if (names.length > LIMITS.maxStudents) {
+        throw new Error(`Roster has ${names.length} names; the limit is ${LIMITS.maxStudents}`);
+    }
+    return names;
 }

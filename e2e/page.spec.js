@@ -59,7 +59,7 @@ test("an invalid base URL is refused and the links keep the last good one", asyn
 test("a damaged link shows an error instead of a roster", async ({ page }) => {
     await page.goto("/#session=abc123&d=zNOT-A-REAL-ROSTER");
     await expect(page.locator("#linkError")).toBeVisible();
-    await expect(page.locator("#linkError")).toHaveText(/damaged.*fresh link/);
+    await expect(page.locator("#linkError")).toHaveText(/damaged.*check the class link/);
     await expect(page.locator(".student-row")).toHaveCount(0);
 });
 

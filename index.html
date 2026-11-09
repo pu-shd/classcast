@@ -37,6 +37,13 @@
                     <select id="columnSelect"></select>
                 </label>
             </div>
+            <div class="gist-source">
+                <label for="gistUrl">Or load the CSV from a secret gist (edit the gist later and the class link stays the same):</label>
+                <div class="class-link-row">
+                    <input type="text" id="gistUrl" placeholder="https://gist.github.com/you/1a2b3c4d…" spellcheck="false">
+                    <button type="button" class="btn btn-copy" id="loadGist">Load</button>
+                </div>
+            </div>
             <div class="csv-status" id="csvStatus"></div>
         </div>
 

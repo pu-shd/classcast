@@ -1,8 +1,9 @@
 // UmbraCast page wiring: setup panel, class link, roster rendering.
 import {
-    DEFAULT_BASE_URL, LIMITS, assignIds, parseCSV, detectNameColumn, namesFromRows,
+    DEFAULT_BASE_URL, LIMITS, assignIds, parseCSV, detectNameColumn, rosterNamesFromCSV,
     shareUrl, viewUrl, renderStudentRows, renderColumnOptions, cleanText,
     normalizeBaseUrl, newSessionId, encodeConfig, decodeConfig, parseHash, buildHash,
+    parseGistRef, gistPageUrl, fetchGistText,
 } from "./classcast.js";
 
 const $ = (id) => document.getElementById(id);
@@ -26,14 +27,19 @@ const DEMO_STUDENTS = [
     { name: "Olivia White", id: "olivia" }
 ];
 
+const LINK_NOTE_NAMES = "The roster lives in the link itself and is never uploaded. Anyone with the link can see the names and room password.";
+const LINK_NOTE_GIST = "The roster is read from your gist each time the page opens; GitHub can take up to 5 minutes to show edits. Anyone with the link can see the names and room password.";
+
 const state = {
     session: "",
     baseUrl: DEFAULT_BASE_URL,
     password: "",
-    names: null, // roster names, or null for the demo roster
+    names: null, // roster carried in the link, or null
+    gist: null, // { user, id, file?, hasHeader, column } when the roster comes from a gist
 };
 let students = DEMO_STUDENTS;
-let csvData = null;
+let csvText = null; // CSV being imported, from a file or a gist
+let csvGistRef = null; // set when csvText came from a gist
 let hashWriteSeq = 0;
 
 const roomPrefix = () => `uc_${state.session}_`;
@@ -50,8 +56,15 @@ function setStatus(id, text, kind) {
 
 function showLinkError(message) {
     const el = $("linkError");
-    el.textContent = `${message}. Ask your teacher for a fresh link.`;
+    el.textContent = `${message}. Ask your teacher to check the class link.`;
     el.hidden = false;
+}
+
+function showLoading(text) {
+    const div = document.createElement("div");
+    div.className = "loading";
+    div.textContent = text;
+    $("studentList").replaceChildren(div);
 }
 
 function renderStudentList() {
@@ -61,27 +74,23 @@ function renderStudentList() {
 // Keep the address bar (and the Class link box) in sync with the setup.
 async function writeHash() {
     const seq = ++hashWriteSeq;
-    const data = state.names || state.password || state.baseUrl !== DEFAULT_BASE_URL
+    const hasData = state.names || state.gist || state.password || state.baseUrl !== DEFAULT_BASE_URL;
+    const data = hasData
         ? await encodeConfig({
             names: state.names ?? undefined,
+            gist: state.gist ?? undefined,
             baseUrl: state.baseUrl,
             password: state.password,
         })
         : null;
     if (seq !== hashWriteSeq) return; // a newer change already won
-    const hash = buildHash(state.session, data);
-    history.replaceState(null, "", "#" + hash);
+    history.replaceState(null, "", "#" + buildHash(state.session, data));
     $("classLink").value = location.href;
     if (location.href.length > 8000) {
         setStatus("linkStatus", "This link is very long; some apps may cut it off. Consider a gist roster.", "error");
+    } else {
+        setStatus("linkStatus", state.gist ? LINK_NOTE_GIST : LINK_NOTE_NAMES);
     }
-}
-
-function setRoster(names) {
-    state.names = names;
-    students = assignIds(names);
-    renderStudentList();
-    writeHash();
 }
 
 function onConfigInput() {
@@ -101,45 +110,59 @@ function updateColumnSelector() {
     const select = $("columnSelect");
     const label = $("columnSelectLabel");
     const hasHeader = $("hasHeader").checked;
+    const rows = csvText === null ? [] : parseCSV(csvText).rows;
 
-    if (!csvData || csvData.rows.length === 0) {
+    if (rows.length === 0) {
         label.classList.remove("visible");
         return;
     }
-
-    const firstRow = csvData.rows[0];
-    if (firstRow.length <= 1) {
+    if (rows[0].length <= 1) {
         label.classList.remove("visible");
         importFromColumn(0);
         return;
     }
 
     label.classList.add("visible");
-    renderColumnOptions(select, firstRow, hasHeader);
+    renderColumnOptions(select, rows[0], hasHeader);
     if (hasHeader) {
-        const nameIndex = detectNameColumn(firstRow);
+        const nameIndex = detectNameColumn(rows[0]);
         if (nameIndex >= 0) select.value = String(nameIndex);
     }
     importFromColumn(parseInt(select.value, 10));
 }
 
-function importFromColumn(colIndex) {
-    if (!csvData || csvData.rows.length === 0) return;
+function importFromColumn(column) {
+    if (csvText === null) return;
     const hasHeader = $("hasHeader").checked;
-    const names = namesFromRows(csvData.rows, { hasHeader, column: colIndex })
-        .map((n) => cleanText(n, LIMITS.maxNameLength))
-        .filter(Boolean);
+    let names;
+    try {
+        names = rosterNamesFromCSV(csvText, { hasHeader, column });
+    } catch (err) {
+        setStatus("csvStatus", err.message, "error");
+        return;
+    }
+    if (csvGistRef) {
+        state.gist = { ...csvGistRef, hasHeader, column };
+        state.names = null;
+    } else {
+        state.names = names;
+        state.gist = null;
+    }
+    students = assignIds(names);
+    renderStudentList();
+    writeHash();
+    const from = csvGistRef ? " from the gist" : "";
+    setStatus("csvStatus", `Imported ${names.length} student${names.length !== 1 ? "s" : ""}${from}. Copy the class link below.`, "success");
+}
 
-    if (names.length === 0) {
-        setStatus("csvStatus", "No valid names found in selected column", "error");
+function startImport(text, gistRef) {
+    if (parseCSV(text).rows.length === 0) {
+        setStatus("csvStatus", gistRef ? "The gist is empty" : "CSV file is empty", "error");
         return;
     }
-    if (names.length > LIMITS.maxStudents) {
-        setStatus("csvStatus", `Too many names (${names.length}); the limit is ${LIMITS.maxStudents}`, "error");
-        return;
-    }
-    setRoster(names);
-    setStatus("csvStatus", `Imported ${names.length} student${names.length !== 1 ? "s" : ""}. Copy the class link below.`, "success");
+    csvText = text;
+    csvGistRef = gistRef;
+    updateColumnSelector();
 }
 
 function handleFileSelect(event) {
@@ -150,19 +173,29 @@ function handleFileSelect(event) {
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-        try {
-            csvData = parseCSV(e.target.result);
-            if (csvData.rows.length === 0) {
-                setStatus("csvStatus", "CSV file is empty", "error");
-                return;
-            }
-            updateColumnSelector();
-        } catch (err) {
-            setStatus("csvStatus", "Error parsing CSV: " + err.message, "error");
-        }
+        $("gistUrl").value = "";
+        startImport(e.target.result, null);
     };
     reader.onerror = () => setStatus("csvStatus", "Error reading file", "error");
     reader.readAsText(file);
+}
+
+async function handleLoadGist() {
+    let ref;
+    try {
+        ref = parseGistRef($("gistUrl").value);
+    } catch (err) {
+        setStatus("csvStatus", err.message, "error");
+        return;
+    }
+    setStatus("csvStatus", "Loading the gist…");
+    try {
+        const text = await fetchGistText(ref);
+        $("csvFile").value = "";
+        startImport(text, ref);
+    } catch (err) {
+        setStatus("csvStatus", err.message, "error");
+    }
 }
 
 async function copyClassLink() {
@@ -173,11 +206,12 @@ async function copyClassLink() {
         setTimeout(() => { $("copyLink").textContent = "Copy"; }, 1500);
     } catch {
         input.select();
-        setStatus("linkStatus", "Press Cmd+C / Ctrl+C to copy the selected link.", "");
+        setStatus("linkStatus", "Press Cmd+C / Ctrl+C to copy the selected link.");
     }
 }
 
-// Load whatever the link carries, then render.
+// Load whatever the link carries, then render. On any failure, show the
+// error and no roster: falling back to the demo would look right but be wrong.
 async function init() {
     const { session, data } = parseHash(location.hash);
     state.session = session ?? newSessionId();
@@ -188,17 +222,25 @@ async function init() {
             const config = await decodeConfig(data);
             if (config.baseUrl) state.baseUrl = config.baseUrl;
             if (config.password) state.password = config.password;
+            $("baseUrl").value = state.baseUrl;
+            $("roomPassword").value = state.password;
             if (config.names) {
                 state.names = config.names;
                 students = assignIds(config.names);
+            } else if (config.gist) {
+                state.gist = config.gist;
+                $("gistUrl").value = gistPageUrl(config.gist);
+                $("hasHeader").checked = config.gist.hasHeader;
+                showLoading("Loading the class roster…");
+                const text = await fetchGistText(config.gist);
+                students = assignIds(rosterNamesFromCSV(text, config.gist));
             }
         } catch (err) {
-            // Never fall back to the demo roster: wrong links would look right.
             showLinkError(err.message);
             students = [];
             $("setup").open = true;
             renderStudentList();
-            return;
+            return; // leave the link as it was
         }
     }
 
@@ -213,6 +255,8 @@ $("roomPassword").addEventListener("input", onConfigInput);
 $("csvFile").addEventListener("change", handleFileSelect);
 $("hasHeader").addEventListener("change", updateColumnSelector);
 $("columnSelect").addEventListener("change", (e) => importFromColumn(parseInt(e.target.value, 10)));
+$("loadGist").addEventListener("click", handleLoadGist);
+$("gistUrl").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLoadGist(); });
 $("copyLink").addEventListener("click", copyClassLink);
 // Pasting a different class link into this tab: start over from it.
 window.addEventListener("hashchange", () => location.reload());

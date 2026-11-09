@@ -471,3 +471,28 @@ h1 {
 [hidden] {
     display: none !important;
 }
+
+/* Gist roster source */
+.gist-source {
+    margin-top: 16px;
+}
+
+.gist-source label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.gist-source input[type="text"] {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.loading {
+    padding: 16px 20px;
+    color: var(--text-muted);
+}
