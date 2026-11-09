@@ -139,7 +139,8 @@ select:focus-visible {
 /* ---------- Class page roster ---------- */
 
 .cc-roster {
-    border-top: 1px solid var(--color-neutral-10);
+    border-top: 1px solid var(--color-neutral-20);
+    border-bottom: 1px solid var(--color-neutral-20);
 }
 
 /* Row spacing and dividers follow the kit's .pt-list--compact (cards.css,
@@ -149,8 +150,18 @@ select:focus-visible {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--color-neutral-10);
+    padding: var(--space-3) var(--space-4);
+}
+
+/* Zebra stripes help the eye follow a name across to its buttons; the
+   row under the pointer (or holding keyboard focus) is highlighted too. */
+.student-row:nth-child(even) {
+    background: var(--color-neutral-10);
+}
+
+.student-row:hover,
+.student-row:focus-within {
+    background: var(--color-brand-20);
 }
 
 .student-actions {
