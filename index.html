@@ -3,194 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="noindex">
     <title>UmbraCast - Classroom Screen Share</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <h1>UmbraCast</h1>
 
-    <div class="config">
-        <label for="baseUrl">VDO.ninja Base URL:</label>
-        <input type="text" id="baseUrl" value="https://vdo.ninja" placeholder="https://vdo.ninja or your self-hosted URL">
-        <label for="roomPassword" style="margin-top: 12px;">Room Password (optional, share with class):</label>
-        <input type="text" id="roomPassword" value="" placeholder="Leave empty for no password">
-    </div>
+    <div class="banner error" id="linkError" role="alert" hidden></div>
 
-    <div class="csv-import">
-        <h3>Import Student List from CSV</h3>
-        <div class="csv-row">
-            <input type="file" id="csvFile" accept=".csv,.txt">
-            <label>
-                <input type="checkbox" id="hasHeader" checked>
-                First row is header
-            </label>
-            <label class="column-select" id="columnSelectLabel">
-                Name column:
-                <select id="columnSelect"></select>
-            </label>
+    <details class="setup" id="setup" open>
+        <summary>Class setup <span class="setup-hint">(teacher)</span></summary>
+
+        <div class="config">
+            <label for="baseUrl">VDO.ninja Base URL:</label>
+            <input type="text" id="baseUrl" value="https://vdo.ninja" placeholder="https://vdo.ninja or your self-hosted URL" spellcheck="false">
+            <label for="roomPassword" style="margin-top: 12px;">Room Password (optional, share with class):</label>
+            <input type="text" id="roomPassword" value="" placeholder="Leave empty for no password" spellcheck="false">
+            <div class="csv-status" id="configStatus"></div>
         </div>
-        <div class="csv-status" id="csvStatus"></div>
-    </div>
+
+        <div class="csv-import">
+            <h3>Import Student List from CSV</h3>
+            <div class="csv-row">
+                <input type="file" id="csvFile" accept=".csv,.txt">
+                <label>
+                    <input type="checkbox" id="hasHeader" checked>
+                    First row is header
+                </label>
+                <label class="column-select" id="columnSelectLabel">
+                    Name column:
+                    <select id="columnSelect"></select>
+                </label>
+            </div>
+            <div class="csv-status" id="csvStatus"></div>
+        </div>
+
+        <div class="config class-link">
+            <label for="classLink">Class link: post this for students and open it on the presenter's computer</label>
+            <div class="class-link-row">
+                <input type="text" id="classLink" readonly>
+                <button type="button" class="btn btn-copy" id="copyLink">Copy</button>
+            </div>
+            <div class="csv-status" id="linkStatus">
+                The roster lives in the link itself and is never uploaded. Anyone with the link can see the names and room password.
+            </div>
+        </div>
+    </details>
 
     <div class="student-list" id="studentList"></div>
 
     <div class="instructions">
         <h3>Instructions</h3>
         <ul>
-            <li><strong>Students:</strong> Click the green <em>Share</em> button next to your name, then select your screen to share</li>
-            <li><strong>Presenter:</strong> Click the blue <em>View</em> button to display a student's screen on the projector</li>
+            <li><strong>Students:</strong> Click the <em>Share</em> button next to your name, then select your screen to share</li>
+            <li><strong>Presenter:</strong> Click the <em>View</em> button to display a student's screen on the projector</li>
             <li>Audio is disabled - use your voice in the room</li>
             <li>Only screen sharing is enabled (no webcam)</li>
         </ul>
     </div>
 
-    <script type="module">
-        import {
-            assignIds, parseCSV, detectNameColumn, namesFromRows, shareUrl, viewUrl,
-            renderStudentRows, renderColumnOptions,
-        } from "./classcast.js";
-
-        // Student list - starts with synthetic data, can be replaced via CSV import
-        let students = [
-            { name: "Alice Chen", id: "alice" },
-            { name: "Bob Martinez", id: "bob" },
-            { name: "Carol Johnson", id: "carol" },
-            { name: "David Kim", id: "david" },
-            { name: "Emma Wilson", id: "emma" },
-            { name: "Frank Brown", id: "frank" },
-            { name: "Grace Lee", id: "grace" },
-            { name: "Henry Davis", id: "henry" },
-            { name: "Iris Patel", id: "iris" },
-            { name: "Jack Thompson", id: "jack" },
-            { name: "Katie Moore", id: "katie" },
-            { name: "Liam Garcia", id: "liam" },
-            { name: "Maya Anderson", id: "maya" },
-            { name: "Noah Taylor", id: "noah" },
-            { name: "Olivia White", id: "olivia" }
-        ];
-
-        // Room prefix - kept in the URL hash so everyone sharing the page URL gets the same links
-        function getRoomPrefix() {
-            const hashMatch = window.location.hash.match(/session=([a-z0-9]+)/i);
-            if (hashMatch) {
-                return "uc_" + hashMatch[1] + "_";
-            }
-            const sessionId = Math.random().toString(36).substring(2, 10);
-            window.location.hash = "session=" + sessionId;
-            return "uc_" + sessionId + "_";
-        }
-
-        const roomPrefix = getRoomPrefix();
-
-        // CSV parsing state
-        let csvData = null;
-
-        const getBaseUrl = () => document.getElementById('baseUrl').value;
-        const getPassword = () => document.getElementById('roomPassword').value.trim();
-        const generateShareUrl = (id) => shareUrl(getBaseUrl(), roomPrefix + id, getPassword());
-        const generateViewUrl = (id) => viewUrl(getBaseUrl(), roomPrefix + id, getPassword());
-
-        // Update column selector dropdown
-        function updateColumnSelector() {
-            const select = document.getElementById('columnSelect');
-            const label = document.getElementById('columnSelectLabel');
-            const hasHeader = document.getElementById('hasHeader').checked;
-
-            if (!csvData || csvData.rows.length === 0) {
-                label.classList.remove('visible');
-                return;
-            }
-
-            const firstRow = csvData.rows[0];
-            if (firstRow.length <= 1) {
-                label.classList.remove('visible');
-                importFromColumn(0);
-                return;
-            }
-
-            label.classList.add('visible');
-            renderColumnOptions(select, firstRow, hasHeader);
-
-            if (hasHeader) {
-                const nameIndex = detectNameColumn(firstRow);
-                if (nameIndex >= 0) {
-                    select.value = nameIndex;
-                }
-            }
-
-            importFromColumn(parseInt(select.value));
-        }
-
-        // Import students from selected column
-        function importFromColumn(colIndex) {
-            const hasHeader = document.getElementById('hasHeader').checked;
-            const status = document.getElementById('csvStatus');
-
-            if (!csvData || csvData.rows.length === 0) return;
-
-            const names = namesFromRows(csvData.rows, { hasHeader, column: colIndex });
-            if (names.length === 0) {
-                status.textContent = 'No valid names found in selected column';
-                status.className = 'csv-status error';
-                return;
-            }
-
-            students = assignIds(names);
-            status.textContent = `Imported ${students.length} student${students.length !== 1 ? 's' : ''}`;
-            status.className = 'csv-status success';
-            renderStudentList();
-        }
-
-        // Handle CSV file selection
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            const status = document.getElementById('csvStatus');
-
-            if (!file) {
-                status.textContent = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    csvData = parseCSV(e.target.result);
-                    if (csvData.rows.length === 0) {
-                        status.textContent = 'CSV file is empty';
-                        status.className = 'csv-status error';
-                        return;
-                    }
-                    updateColumnSelector();
-                } catch (err) {
-                    status.textContent = 'Error parsing CSV: ' + err.message;
-                    status.className = 'csv-status error';
-                }
-            };
-            reader.onerror = () => {
-                status.textContent = 'Error reading file';
-                status.className = 'csv-status error';
-            };
-            reader.readAsText(file);
-        }
-
-        function renderStudentList() {
-            renderStudentRows(document.getElementById('studentList'), students, {
-                share: generateShareUrl,
-                view: generateViewUrl,
-            });
-        }
-
-        // Event listeners
-        document.getElementById('baseUrl').addEventListener('input', renderStudentList);
-        document.getElementById('roomPassword').addEventListener('input', renderStudentList);
-        document.getElementById('csvFile').addEventListener('change', handleFileSelect);
-        document.getElementById('hasHeader').addEventListener('change', updateColumnSelector);
-        document.getElementById('columnSelect').addEventListener('change', (e) => {
-            importFromColumn(parseInt(e.target.value));
-        });
-
-        // Initial render
-        renderStudentList();
-    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -193,3 +193,252 @@ export function renderColumnOptions(select, firstRow, hasHeader) {
         return option;
     }));
 }
+
+// ---------------------------------------------------------------------------
+// Class links: the roster and settings travel in the URL fragment (#...).
+// Browsers never send the fragment to the server, so names stay off GitHub.
+// Everything decoded from a link is untrusted and validated here.
+// ---------------------------------------------------------------------------
+
+export const LIMITS = Object.freeze({
+    maxStudents: 500,
+    maxNameLength: 100,
+    maxPasswordLength: 128,
+    maxEncodedLength: 64 * 1024,
+    maxDecodedBytes: 256 * 1024,
+});
+
+const CONFIG_VERSION = 1;
+const SESSION_RE = /^[a-z0-9]{4,32}$/i;
+// C0/C1 controls plus bidi overrides and isolates, which can disguise names.
+// eslint-disable-next-line no-control-regex
+const UNSAFE_CHARS_RE = /[\u0000-\u001f\u007f-\u009f‎‏‪-‮⁦-⁩]/g;
+
+/**
+ * @typedef {{
+ *   names?: string[],
+ *   baseUrl?: string,
+ *   password?: string,
+ * }} ClassConfig
+ */
+
+/**
+ * Strip control and bidi characters, collapse whitespace and cap length.
+ * @param {string} value
+ * @param {number} maxLength
+ * @returns {string}
+ */
+export function cleanText(value, maxLength) {
+    return value.replace(/\s+/g, " ").replace(UNSAFE_CHARS_RE, "").trim().slice(0, maxLength);
+}
+
+/**
+ * Validate a VDO.ninja base URL. Only https (or http on localhost) is
+ * allowed, so a crafted link can't turn Share/View into javascript: URLs.
+ * @param {string} input
+ * @returns {string} the URL without query, fragment or trailing slash
+ */
+export function normalizeBaseUrl(input) {
+    let url;
+    try {
+        url = new URL(input.trim());
+    } catch {
+        throw new Error("VDO.ninja base URL is not a valid URL");
+    }
+    const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    if (url.protocol !== "https:" && !(url.protocol === "http:" && local)) {
+        throw new Error("VDO.ninja base URL must start with https://");
+    }
+    if (url.username || url.password) {
+        throw new Error("VDO.ninja base URL must not contain credentials");
+    }
+    return `${url.origin}${url.pathname}`.replace(/\/+$/, "");
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+export function isValidSession(value) {
+    return typeof value === "string" && SESSION_RE.test(value);
+}
+
+/**
+ * A new random session ID (10 base-36 characters).
+ * @returns {string}
+ */
+export function newSessionId() {
+    const bytes = crypto.getRandomValues(new Uint8Array(10));
+    return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
+}
+
+/**
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+function toBase64Url(bytes) {
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * @param {string} text
+ * @returns {Uint8Array}
+ */
+function fromBase64Url(text) {
+    if (!/^[A-Za-z0-9_-]*$/.test(text)) throw new Error("Class link is damaged (bad characters)");
+    let binary;
+    try {
+        binary = atob(text.replace(/-/g, "+").replace(/_/g, "/"));
+    } catch {
+        throw new Error("Class link is damaged (bad encoding)");
+    }
+    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+}
+
+/**
+ * Run bytes through a (de)compression stream, refusing output over `limit`.
+ * @param {Uint8Array} bytes
+ * @param {CompressionStream | DecompressionStream} transform
+ * @param {number} limit
+ * @returns {Promise<Uint8Array>}
+ */
+async function pipeBytes(bytes, transform, limit) {
+    const reader = new Blob([/** @type {BlobPart} */ (bytes)]).stream().pipeThrough(transform).getReader();
+    /** @type {Uint8Array[]} */
+    const chunks = [];
+    let total = 0;
+    for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.length;
+        if (total > limit) {
+            await reader.cancel();
+            throw new Error("Class link is too large");
+        }
+        chunks.push(value);
+    }
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+        out.set(chunk, offset);
+        offset += chunk.length;
+    }
+    return out;
+}
+
+/**
+ * Validate and normalise a decoded config object.
+ * @param {unknown} raw
+ * @returns {ClassConfig}
+ */
+export function validateConfig(raw) {
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+        throw new Error("Class link is damaged (not an object)");
+    }
+    const obj = /** @type {Record<string, unknown>} */ (raw);
+    if (obj.v !== CONFIG_VERSION) {
+        throw new Error("Class link was made by a different version of UmbraCast");
+    }
+    /** @type {ClassConfig} */
+    const config = {};
+    if (obj.n !== undefined) {
+        if (!Array.isArray(obj.n) || obj.n.some((n) => typeof n !== "string")) {
+            throw new Error("Class link roster is damaged");
+        }
+        if (obj.n.length > LIMITS.maxStudents) {
+            throw new Error(`Class link roster has more than ${LIMITS.maxStudents} students`);
+        }
+        const names = obj.n.map((n) => cleanText(n, LIMITS.maxNameLength)).filter(Boolean);
+        if (names.length === 0) throw new Error("Class link roster is empty");
+        config.names = names;
+    }
+    if (obj.b !== undefined) {
+        if (typeof obj.b !== "string") throw new Error("Class link base URL is damaged");
+        config.baseUrl = normalizeBaseUrl(obj.b);
+    }
+    if (obj.p !== undefined) {
+        if (typeof obj.p !== "string") throw new Error("Class link password is damaged");
+        config.password = cleanText(obj.p, LIMITS.maxPasswordLength);
+    }
+    return config;
+}
+
+/**
+ * Encode a config for the URL fragment: "z" + base64url(deflate-raw(JSON)),
+ * or "j" + base64url(JSON) where CompressionStream is unavailable.
+ * @param {ClassConfig} config
+ * @returns {Promise<string>}
+ */
+export async function encodeConfig(config) {
+    /** @type {Record<string, unknown>} */
+    const wire = { v: CONFIG_VERSION };
+    if (config.names) wire.n = config.names;
+    if (config.baseUrl && config.baseUrl !== DEFAULT_BASE_URL) wire.b = config.baseUrl;
+    if (config.password) wire.p = config.password;
+    const json = new TextEncoder().encode(JSON.stringify(wire));
+    if (typeof CompressionStream === "function") {
+        const packed = await pipeBytes(json, new CompressionStream("deflate-raw"), Infinity);
+        return "z" + toBase64Url(packed);
+    }
+    return "j" + toBase64Url(json);
+}
+
+/**
+ * Decode and validate a config produced by encodeConfig.
+ * @param {string} encoded
+ * @returns {Promise<ClassConfig>}
+ */
+export async function decodeConfig(encoded) {
+    if (encoded.length > LIMITS.maxEncodedLength) throw new Error("Class link is too large");
+    const kind = encoded[0];
+    const body = fromBase64Url(encoded.slice(1));
+    let bytes;
+    if (kind === "z") {
+        if (typeof DecompressionStream !== "function") {
+            throw new Error("This browser is too old to open class links");
+        }
+        try {
+            bytes = await pipeBytes(body, new DecompressionStream("deflate-raw"), LIMITS.maxDecodedBytes);
+        } catch (err) {
+            if (err instanceof Error && err.message === "Class link is too large") throw err;
+            throw new Error("Class link is damaged (cannot decompress)", { cause: err });
+        }
+    } else if (kind === "j") {
+        if (body.length > LIMITS.maxDecodedBytes) throw new Error("Class link is too large");
+        bytes = body;
+    } else {
+        throw new Error("Class link is damaged (unknown format)");
+    }
+    let parsed;
+    try {
+        parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    } catch {
+        throw new Error("Class link is damaged (bad data)");
+    }
+    return validateConfig(parsed);
+}
+
+/**
+ * Split a location.hash into its session ID and encoded config.
+ * An invalid session is reported as null so the caller can replace it.
+ * @param {string} hash
+ * @returns {{ session: string | null, data: string | null }}
+ */
+export function parseHash(hash) {
+    const params = new URLSearchParams(hash.replace(/^#/, ""));
+    const session = params.get("session");
+    return { session: isValidSession(session) ? session : null, data: params.get("d") };
+}
+
+/**
+ * @param {string} session
+ * @param {string | null} data
+ * @returns {string} fragment without the leading "#"
+ */
+export function buildHash(session, data) {
+    return data ? `session=${session}&d=${data}` : `session=${session}`;
+}

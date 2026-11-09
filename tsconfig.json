@@ -11,5 +11,5 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["classcast.js", "test/**/*.js"]
+  "include": ["classcast.js", "test/**/*.js", "e2e/**/*.js", "playwright.config.js"]
 }

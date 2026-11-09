@@ -2,7 +2,7 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-    { ignores: ["vdo.ninja/", "node_modules/", "dist/", "public/", "examples/"] },
+    { ignores: ["vdo.ninja/", "node_modules/", "dist/", "public/", "examples/", "test-results/", "playwright-report/"] },
     js.configs.recommended,
     {
         files: ["**/*.js"],

@@ -17,3 +17,12 @@ jobs:
         run: docker build -t umbracast-test .
       - name: Lint, type check and test
         run: docker run --rm umbracast-test
+
+  e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build browser test image
+        run: docker build -f Dockerfile.e2e -t umbracast-e2e .
+      - name: End-to-end tests (Chromium, WebKit, Firefox)
+        run: docker run --rm --ipc=host umbracast-e2e

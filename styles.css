@@ -411,3 +411,63 @@ h1 {
         gap: 12px;
     }
 }
+
+/* Collapsible teacher setup */
+.setup {
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.setup > summary {
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 10px 4px;
+    margin-bottom: 10px;
+}
+
+.setup-hint {
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+/* Class link box */
+.class-link-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.class-link-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 12px;
+}
+
+.btn-copy {
+    margin-left: 0;
+    background: linear-gradient(135deg, #b8860b 0%, #d4a574 100%);
+    color: white;
+    white-space: nowrap;
+}
+
+/* Error banner for damaged class links */
+.banner {
+    padding: 14px 18px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.banner.error {
+    background: rgba(233, 69, 96, 0.12);
+    border: 1px solid var(--accent-primary);
+    color: var(--text-primary);
+}
+
+[hidden] {
+    display: none !important;
+}

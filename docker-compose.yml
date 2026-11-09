@@ -2,3 +2,9 @@ services:
   test:
     build: .
     image: umbracast-test
+  e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    image: umbracast-e2e
+    ipc: host
