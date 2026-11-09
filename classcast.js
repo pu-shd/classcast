@@ -136,3 +136,60 @@ export function viewUrl(baseUrl, streamId, password) {
     const base = baseUrl.replace(/\/$/, "");
     return `${base}/?view=${encodeURIComponent(streamId)}&scene&videobitrate=12000&scale=100&sharperscreen&codec=vp9${passwordParam(password)}`;
 }
+
+/**
+ * Render one row per student, with Share and View links.
+ * @param {HTMLElement} container
+ * @param {Student[]} students
+ * @param {{ share: (id: string) => string, view: (id: string) => string }} links
+ */
+export function renderStudentRows(container, students, links) {
+    const doc = container.ownerDocument;
+    /**
+     * @param {string} href
+     * @param {string} className
+     * @param {string} label
+     */
+    const link = (href, className, label) => {
+        const a = doc.createElement("a");
+        a.href = href;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.className = `btn ${className}`;
+        a.textContent = label;
+        return a;
+    };
+    const rows = students.map((student) => {
+        const row = doc.createElement("div");
+        row.className = "student-row";
+        const name = doc.createElement("span");
+        name.className = "student-name";
+        const id = doc.createElement("span");
+        id.className = "student-id";
+        id.textContent = `#${student.id}`;
+        name.append(student.name, id);
+        row.append(
+            name,
+            link(links.share(student.id), "btn-share", "Share"),
+            link(links.view(student.id), "btn-view", "View"),
+        );
+        return row;
+    });
+    container.replaceChildren(...rows);
+}
+
+/**
+ * Fill the column <select> with one option per CSV column.
+ * @param {HTMLSelectElement} select
+ * @param {string[]} firstRow
+ * @param {boolean} hasHeader
+ */
+export function renderColumnOptions(select, firstRow, hasHeader) {
+    const doc = select.ownerDocument;
+    select.replaceChildren(...firstRow.map((col, i) => {
+        const option = doc.createElement("option");
+        option.value = String(i);
+        option.textContent = hasHeader ? col : `Column ${i + 1}`;
+        return option;
+    }));
+}

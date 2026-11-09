@@ -45,7 +45,10 @@
     </div>
 
     <script type="module">
-        import { assignIds, parseCSV, detectNameColumn, namesFromRows, shareUrl, viewUrl } from "./classcast.js";
+        import {
+            assignIds, parseCSV, detectNameColumn, namesFromRows, shareUrl, viewUrl,
+            renderStudentRows, renderColumnOptions,
+        } from "./classcast.js";
 
         // Student list - starts with synthetic data, can be replaced via CSV import
         let students = [
@@ -106,10 +109,7 @@
             }
 
             label.classList.add('visible');
-            select.innerHTML = firstRow.map((col, i) => {
-                const displayName = hasHeader ? col : `Column ${i + 1}`;
-                return `<option value="${i}">${displayName}</option>`;
-            }).join('');
+            renderColumnOptions(select, firstRow, hasHeader);
 
             if (hasHeader) {
                 const nameIndex = detectNameColumn(firstRow);
@@ -174,17 +174,10 @@
         }
 
         function renderStudentList() {
-            const container = document.getElementById('studentList');
-            container.innerHTML = students.map(student => `
-                <div class="student-row">
-                    <span class="student-name">
-                        ${student.name}
-                        <span class="student-id">#${student.id}</span>
-                    </span>
-                    <a href="${generateShareUrl(student.id)}" target="_blank" class="btn btn-share">Share</a>
-                    <a href="${generateViewUrl(student.id)}" target="_blank" class="btn btn-view">View</a>
-                </div>
-            `).join('');
+            renderStudentRows(document.getElementById('studentList'), students, {
+                share: generateShareUrl,
+                view: generateViewUrl,
+            });
         }
 
         // Event listeners
