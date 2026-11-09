@@ -158,16 +158,15 @@ function detachGist() {
 // keeps the draft.
 async function writeLink() {
     const seq = ++linkWriteSeq;
-    const hasData = state.names || state.gist || state.password || state.title || state.baseUrl !== DEFAULT_BASE_URL;
-    const data = hasData
-        ? await encodeConfig({
-            names: state.names ?? undefined,
-            gist: state.gist ?? undefined,
-            baseUrl: state.baseUrl,
-            password: state.password,
-            title: state.title,
-        })
-        : null;
+    // Always encode the settings, even when empty: the class page requires
+    // them, so a link with only a session isn't a class link.
+    const data = await encodeConfig({
+        names: state.names ?? undefined,
+        gist: state.gist ?? undefined,
+        baseUrl: state.baseUrl,
+        password: state.password,
+        title: state.title,
+    });
     if (seq !== linkWriteSeq) return; // a newer change already won
     history.replaceState(null, "", "#" + buildHash(state.session, data));
     const link = classLinkUrl(location.href, state.session, data);

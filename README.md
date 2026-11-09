@@ -26,9 +26,9 @@ git submodule update --init --recursive
 
 The page is hosted at https://pu-shd.github.io/classcast/ (or open `index.html` from your own copy).
 
-**No setup:** open the page and share the link in the address bar. It lists seats Student 001 to Student 020; each student picks a number and clicks **Share**, and the presenter clicks **View** on the same number.
+The class page needs a class link: opened without one, it asks for the link and points teachers to the create page.
 
-**With your roster:**
+**Making a class link:**
 
 1. Open the create page, https://pu-shd.github.io/classcast/create.html (also linked at the bottom of the class page), and fill in the **Students** list. It starts as Student 001–020: type names over the seats, press Enter or **Add student** for more rows, and use × to remove rows. Blank rows are skipped. To start from a file instead, open **Import student list from CSV or a secret gist**:
    - **CSV file:** the names fill the list, where you can correct them. They're stored in the class link itself.
@@ -142,7 +142,7 @@ Everything the page needs is in the part of the URL after `#`:
 https://pu-shd.github.io/classcast/#session=k3j9x0q2ab&d=z...
 ```
 
-- `session` keeps everyone's stream IDs the same. Links with only a `session` (from older versions) still work.
+- `session` keeps everyone's stream IDs the same. Links with only a `session` (from older versions) are no longer class links; make a new one on the create page.
 - `d` is compressed data: either the roster names, or a reference to a gist, plus the title, base URL and password if you set them.
 
 Browsers never send the `#` part to the web server, so roster names are not uploaded to GitHub Pages. But **anyone who has the link can see the names and the room password**, so share it only with your class. To keep real names out of the link entirely, use seat numbers or initials.

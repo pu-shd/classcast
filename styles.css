@@ -116,6 +116,18 @@ select:focus-visible {
     font-weight: var(--font-weight-semibold);
 }
 
+.cc-notice {
+    margin-bottom: var(--space-8);
+    padding: var(--space-4) var(--space-5);
+    background: var(--color-neutral-5);
+    border-left: 4px solid var(--color-neutral-60);
+    font-family: var(--font-display);
+}
+
+.cc-notice p {
+    margin: 0;
+}
+
 .cc-status {
     min-height: 1.2em;
     margin: var(--space-1) 0 0;

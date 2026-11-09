@@ -9,6 +9,12 @@ test.beforeEach(async ({ page }) => {
 /** @param {import("@playwright/test").Page} page */
 const classLink = (page) => page.locator("#classLink").inputValue();
 
+/** Wait for the page's first class link, then return it. @param {import("@playwright/test").Page} page */
+async function settledLink(page) {
+    await expect(page.locator("#classLink")).toHaveValue(/#session=[a-z0-9]+&d=z/);
+    return classLink(page);
+}
+
 test("a CSV roster and settings become a class link to the class page", async ({ page, browser }) => {
     await page.goto("/create.html");
     await page.fill("#classTitle", "ORF 309 Screen Share");
@@ -33,10 +39,20 @@ test("a CSV roster and settings become a class link to the class page", async ({
     await expect(student.locator("input")).toHaveCount(0);
 });
 
+test("an untouched create page still makes a working class link", async ({ page, browser }) => {
+    await page.goto("/create.html");
+    await expect(page.locator("#classLink")).toHaveValue(/#session=[a-z0-9]{10}&d=z/);
+    const plain = await freshPage(browser);
+    await plain.goto(await classLink(page));
+    await expect(plain.locator(".student-row")).toHaveCount(20);
+    await expect(plain.locator("#needLink")).toBeHidden();
+});
+
 test("with no roster, the link gives numbered seats and keeps the title", async ({ page, browser }) => {
     await page.goto("/create.html");
+    const before = await settledLink(page);
     await page.fill("#classTitle", "Lab");
-    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await expect(page.locator("#classLink")).not.toHaveValue(before);
     await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
     await expect(page.locator("#rosterHeading")).toHaveText("Students");
     expect((await previewNames(page)).length).toBe(20);
@@ -79,8 +95,9 @@ test("editing an existing class link keeps its session and settings", async ({ p
 
 test("a refresh keeps the draft", async ({ page }) => {
     await page.goto("/create.html");
+    const before = await settledLink(page);
     await page.fill("#classTitle", "Draft");
-    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await expect(page.locator("#classLink")).not.toHaveValue(before);
     await openImport(page);
     await page.setInputFiles("#csvFile", csv("r.csv", "Name\nAlice\n"));
     await expect(page.locator("#csvStatus")).toHaveText(/Imported 1/);
@@ -107,7 +124,7 @@ test("a damaged link opened for editing keeps its session and says so", async ({
     await page.goto("/create.html#session=abc123&d=zBROKEN");
     await expect(page.locator("#editSection")).toHaveAttribute("open", "");
     await expect(page.locator("#existingStatus")).toHaveText(/damaged.*session is kept/);
-    expect(await classLink(page)).toBe("http://127.0.0.1:4173/#session=abc123");
+    expect(await classLink(page)).toMatch(/^http:\/\/127\.0\.0\.1:4173\/#session=abc123&d=z/);
 });
 
 test("hostile names in an imported CSV stay as text", async ({ page }) => {
@@ -136,10 +153,11 @@ test("names can be edited inline and travel in the link", async ({ page, browser
     const fields = page.locator("#rosterList input");
     await expect(fields).toHaveCount(20);
     await expect(fields.nth(0)).toHaveValue("Student 001");
-    await expect(page.locator("#classLink")).not.toHaveValue(/&d=/);
+    await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
 
+    const before = await classLink(page);
     await fields.nth(1).fill("Bob Martinez");
-    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await expect(page.locator("#classLink")).not.toHaveValue(before);
     await expect(page.locator("#rosterHeading")).toHaveText("Students (20)");
 
     const student = await freshPage(browser);
@@ -175,15 +193,17 @@ test("rows can be added, removed and reset; blanks are skipped", async ({ page, 
     await page.click("#resetRoster");
     await expect(fields).toHaveCount(20);
     await expect(fields.nth(0)).toHaveValue("Student 001");
-    await expect(page.locator("#classLink")).not.toHaveValue(/&d=/);
+    await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
 });
 
 test("clearing every name falls back to numbered seats", async ({ page }) => {
     await page.goto("/create.html");
+    const before = await settledLink(page);
     await page.locator("#rosterList input").first().fill("Only One");
-    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await expect(page.locator("#classLink")).not.toHaveValue(before);
+    await expect(page.locator("#linkStatus")).toHaveText(/lives in the link/);
     for (const field of await page.locator("#rosterList input").all()) await field.fill("");
-    await expect(page.locator("#classLink")).not.toHaveValue(/&d=/);
+    await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
     await expect(page.locator("#linkStatus")).toHaveText(/Student 001–020/);
 });
 
@@ -196,7 +216,6 @@ test("an imported CSV lands in the editor and can be corrected", async ({ page, 
     await page.locator("#rosterList input").first().fill("Alice");
     await expect(page.locator("#rosterHeading")).toHaveText("Students (2)");
     const student = await freshPage(browser);
-    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
     // Wait until the link reflects the correction, then open it.
     await expect.poll(async () => {
         await student.goto(await page.locator("#classLink").inputValue());
@@ -216,8 +235,9 @@ test("the page explains itself and keeps the edit field collapsed", async ({ pag
 
 test("a class link opened for editing shows the edit section open", async ({ page, browser }) => {
     await page.goto("/create.html");
+    const before = await settledLink(page);
     await page.locator("#rosterList input").first().fill("Alice");
-    await expect(page.locator("#classLink")).toHaveValue(/&d=z/);
+    await expect(page.locator("#classLink")).not.toHaveValue(before);
     const editor = await freshPage(browser);
     await editor.goto(new URL(await page.locator("#classLink").inputValue()).hash.replace(/^/, "/create.html"));
     await expect(editor.locator("#editSection")).toHaveAttribute("open", "");

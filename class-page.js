@@ -2,7 +2,7 @@
 // Share and View buttons. All setup lives on create.html.
 import {
     DEFAULT_BASE_URL, assignIds, defaultStudents, shareUrl, viewUrl, renderStudentRows,
-    newSessionId, decodeConfig, parseHash, buildHash, loadRosterNames,
+    decodeConfig, parseHash, loadRosterNames,
 } from "./classcast.js";
 
 const SITE_NAME = "ClassCast";
@@ -23,19 +23,27 @@ function showTitle(title) {
 
 // On any failure show the error and no roster: falling back to the default
 // seats would look right but be wrong.
+// A class link is required: without one there's no roster to show and no
+// shared session, so the page asks for the link instead.
 async function init() {
-    const { session: linkSession, data } = parseHash(location.hash);
-    const session = linkSession ?? newSessionId();
+    const { session, data } = parseHash(location.hash);
 
-    let config = {};
-    let names = null;
+    if (!data) {
+        $("needLink").hidden = false;
+        $("studentsSection").hidden = true;
+        $("createLink").hidden = false;
+        return;
+    }
+
+    let config;
+    let names;
     try {
-        if (data) {
-            config = await decodeConfig(data);
-            showTitle(config.title);
-            if (config.gist) showLoading("Loading the class roster…");
-            names = await loadRosterNames(config);
-        }
+        // Every viewer must share one session, or their stream IDs won't match.
+        if (session === null) throw new Error("Class link is damaged (missing session)");
+        config = await decodeConfig(data);
+        showTitle(config.title);
+        if (config.gist) showLoading("Loading the class roster…");
+        names = await loadRosterNames(config);
     } catch (err) {
         $("linkError").textContent = `${err.message}. Ask your teacher to check the class link.`;
         $("linkError").hidden = false;
@@ -50,14 +58,7 @@ async function init() {
         share: (id) => shareUrl(baseUrl, prefix + id, password),
         view: (id) => viewUrl(baseUrl, prefix + id, password),
     });
-
-    if (!data) {
-        // No class link: give this page a session so its address can be shared as-is.
-        history.replaceState(null, "", "#" + buildHash(session, null));
-        $("createLink").hidden = false;
-    }
 }
-
 
 // Pasting a different class link into this tab: start over from it.
 window.addEventListener("hashchange", () => location.reload());
