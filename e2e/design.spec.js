@@ -81,3 +81,19 @@ for (const path of ["./", "create.html"]) {
         expect(await px("h1")).toBeGreaterThan(await px("h2"));
     });
 }
+
+test("student rows are striped, with a hover highlight, so names line up with their buttons", async ({ page }) => {
+    await page.goto(`./#session=abc123&d=${jdata({ v: 1, n: ["A", "B", "C", "D"] })}`);
+    const rows = page.locator(".student-row");
+    await expect(rows).toHaveCount(4);
+    const bg = (/** @type {number} */ i) => rows.nth(i).evaluate((el) => getComputedStyle(el).backgroundColor);
+    const [a, b, c, d] = [await bg(0), await bg(1), await bg(2), await bg(3)];
+    expect(a).not.toBe(b);
+    expect(a).toBe(c);
+    expect(b).toBe(d);
+    // Text and buttons sit inside the stripe, not flush with its edge.
+    const pad = await rows.first().evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+    expect(pad).toBeGreaterThan(0);
+    await rows.nth(2).hover();
+    expect(await bg(2)).not.toBe(a);
+});
