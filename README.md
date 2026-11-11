@@ -14,7 +14,7 @@ UmbraCast generates a web page of links for students to share their screens with
 
 ```bash
 # Clone with VDO.ninja submodule
-git clone --recurse-submodules https://github.com/YOUR_USERNAME/umbracast.git
+git clone --recurse-submodules git@github.com:pu-shd/classcast.git
 
 # Or if already cloned without submodules:
 git submodule update --init --recursive
@@ -197,4 +197,22 @@ docker-compose run --rm test
 docker-compose run --rm e2e
 ```
 
-Without Docker: `npm ci`, then `npm run check` and `npx playwright install && npm run e2e`. CI runs both suites on every push and pull request.
+Without Docker: install Node 22 or later, run `npm ci`, then `npm run check` and `npx playwright install && npm run e2e`. CI runs both suites on every push and pull request.
+
+## Deployment
+
+GitHub Pages serves the site straight from the repository: **Settings → Pages → Build and deployment** is set to *Deploy from a branch*, branch `main`, folder `/ (root)`. The empty `.nojekyll` file makes Pages serve the files as-is. There is no build step, so merging a pull request into `main` publishes it to https://pu-shd.github.io/classcast/ within a few minutes.
+
+Work on a branch and merge through a pull request after CI passes. `main` has no branch protection, so GitHub doesn't enforce this; it's a team habit.
+
+## Restoring on a New Machine
+
+Everything needed to develop and deploy ClassCast is in this repository and its GitHub settings. No secrets, `.env` files or databases are kept locally or used by CI. Class data lives in class links and teachers' gists, not here. To set up again after a wipe:
+
+1. Set up GitHub access: an SSH key added to your GitHub account (the remote is `git@github.com:pu-shd/classcast.git`), and optionally `gh auth login`.
+2. Install Docker with `docker-compose` (or Node 22 or later to work without Docker).
+3. Clone with the submodule: `git clone --recurse-submodules git@github.com:pu-shd/classcast.git`
+4. Check the setup: `docker-compose run --rm test` and `docker-compose run --rm e2e` should both pass.
+5. If the live site stops updating, check the Pages setting under [Deployment](#deployment).
+
+Files that are not in git (`node_modules/`, `test-results/`) are rebuilt by the steps above.
